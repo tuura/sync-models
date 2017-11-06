@@ -3,6 +3,6 @@
 	"^-+": "blue bold",
 	"^Traceback .*": "red bold",
 	".* : (\\[.+\\])": "red bold",
-	".* PASS": "blue bold",
-	".* FAIL": "red bold"
+	"Result: (PASS)": "green bold",
+	"Result: (FAIL)": "red bold"
 }
