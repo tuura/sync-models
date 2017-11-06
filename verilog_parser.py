@@ -22,22 +22,24 @@ def add_module(circuit, module_def):
     module = {
         "type": module_def[0],
         "instance": module_def[1],
-        "connections": []
+        "connections": {}
     }
 
     if module["type"] == "module":
+
         # circuit definition
         circuit["name"] = module["instance"]
 
     else:
-        # module instantiation
 
+        # module instantiation
         con_reg = r".(?P<pin>\w+)[\s]*\([\s]*(?P<net>\w+)[\s]*\)[\s]*"
         con_str = module_def[2]
         matches = re.compile(con_reg).findall(con_str)
 
         for item in matches:
-            module["connections"].append({ "pin": item[0], "net": item[1] })
+            pin, net = item
+            module["connections"][pin] = net
 
         circuit["modules"].append(module)
 
@@ -69,7 +71,7 @@ def add_outputs(circuit, outputs_def):
     circuit["outputs"] = list(nets)
 
 
-def parse(file):
+def load_verilog(file):
 
     # Read file content
 
@@ -115,7 +117,7 @@ def parse(file):
 
 def main():
 
-    circuit = parse("examples/d-element/circuit.v")
+    circuit = load_verilog("examples/d-element/circuit.v")
 
     print(json.dumps(circuit, indent=4))
 

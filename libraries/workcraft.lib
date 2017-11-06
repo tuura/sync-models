@@ -1,0 +1,206 @@
+# --- COMBINATIONAL GATES
+
+# Note that the buffer size and delay are intentionally low
+GATE    BUF          0  O=I;
+PIN *   NONINV 1 999 0.00001 0.00001 0.00001 0.00001
+
+GATE    INV          8  ON=!I;
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    AND2        16  O=A*B;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    NAND2       12  ON=!(A*B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NAND2B      16  ON=!(!AN*B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    AND3        20  O=A*B*C;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    NAND3       16  ON=!(A*B*C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NAND3B      20  ON=!(!AN*B*C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    AND4        24  O=A*B*C*D;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    NAND4       20  ON=!(A*B*C*D);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NAND4B      24  ON=!(!AN*B*C*D);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NAND4BB     28  ON=!(!AN*!BN*C*D);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    OR2         16  O=A+B;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    NOR2        12  ON=!(A+B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NOR2B       16  ON=!(!AN+B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    OR3         20  O=A+B+C;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    NOR3        16  ON=!(A+B+C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NOR3B       20  ON=!(!AN+B+C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    OR4         24  O=A+B+C+D;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    NOR4        20  ON=!(A+B+C+D);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NOR4B       24  ON=!(!AN+B+C+D);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    NOR4BB      28  ON=!(!AN+!BN+C+D);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    AOI21       16  ON=!(A1*A2+B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI211      20  ON=!(A1*A2+B+C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI22       20  ON=!(A1*A2+B1*B2);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI221      24  ON=!(A1*A2+B1*B2+C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI222      28  ON=!(A1*A2+B1*B2+C1*C2);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI31       20  ON=!(A1*A2*A3+B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI32       24  ON=!(A1*A2*A3+B1*B2);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI33       28  ON=!(A1*A2*A3+B1*B2*B3);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI2BB1     24  ON=!(!A1N*!A2N+B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    AOI2BB2     28  ON=!(!A1N*!A2N+B1*B2);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    AO21        20  O=A1*A2+B;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    AO22        24   O=A1*A2+B1*B2;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+
+GATE    OAI21       16  ON=!((A1+A2)*B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI211      20  ON=!((A1+A2)*B*C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI22       20  ON=!((A1+A2)*(B1+B2));
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI221      24  ON=!((A1+A2)*(B1+B2)*C);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI222      28  ON=!((A1+A2)*(B1+B2)*(C1+C2));
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI31       20  ON=!((A1+A2+A3)*B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI32       24  ON=!((A1+A2+A3)*(B1+B2));
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI33       28  ON=!((A1+A2+A3)*(B1+B2+B3));
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI2BB1     24  ON=!((!A1N+!A2N)*B);
+PIN *   INV 1 999 1 0.2 1 0.2
+
+GATE    OAI2BB2     28  ON=!((!A1N+!A2N)*(B1+B2));
+PIN *   INV 1 999 1 0.2 1 0.2
+
+
+GATE    OA21        20  O=(A1+A2)*B;
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+GATE    OA22        24  O=(A1+A2)*(B1+B2);
+PIN *   NONINV 1 999 1 0.2 1 0.2
+
+
+
+# The following functions are not used. They are binate and there
+# is no guarantee of being hazard-free. Use them at your own risk.
+
+#GATE    XOR2        32  O=A*!B+!A*B;
+#PIN *   UNKNOWN 1 999 1 0.2 1 0.2
+
+#GATE    XOR3        44  O=A*!B*!C+!A*B*!C+!A*!B*C+A*B*C;
+#PIN *   UNKNOWN 1 999 1 0.2 1 0.2
+
+#GATE    XNOR2       36  ON=!(A*!B+!A*B);
+#PIN *   UNKNOWN 1 999 1 0.2 1 0.2
+
+#GATE    XNOR3       48  ON=!(A*!B*!C+!A*B*!C+!A*!B*C+A*B*C);
+#PIN *   UNKNOWN 1 999 1 0.2 1 0.2
+
+#GATE    MUX2        24  O=I0*!S0+I1*S0;
+#PIN A   NONINV 1 999 1 0.2 1 0.2
+#PIN B   NONINV 1 999 1 0.2 1 0.2
+#PIN S0  UNKNOWN 1 999 1 0.2 1 0.2
+
+#GATE    MUX3        32  O=I0*!S0*!S1+I1*S0*!S1+I2*!S0*S1;
+#PIN A   NONINV 1 999 1 0.2 1 0.2
+#PIN B   NONINV 1 999 1 0.2 1 0.2
+#PIN C   NONINV 1 999 1 0.2 1 0.2
+#PIN S0  UNKNOWN 1 999 1 0.2 1 0.2
+#PIN S1  UNKNOWN 1 999 1 0.2 1 0.2
+
+#GATE    MUX4        36  O=I0*!S0*!S1+I1*S0*!S1+I2*!S0*S1+I3*S0*S1;
+#PIN A   NONINV 1 999 1 0.2 1 0.2
+#PIN B   NONINV 1 999 1 0.2 1 0.2
+#PIN C   NONINV 1 999 1 0.2 1 0.2
+#PIN D   NONINV 1 999 1 0.2 1 0.2
+#PIN S0  UNKNOWN 1 999 1 0.2 1 0.2
+#PIN S1  UNKNOWN 1 999 1 0.2 1 0.2
+
+
+GATE    LOGIC1       0   O=CONST1;
+
+GATE    LOGIC0       0   O=CONST0;
+
+# --- ASYNCH LATCHES
+
+# C-element
+LATCH   C2          20  Q=A*B+(A+B)*Q_NEXT;
+PIN A   NONINV 1 999 1 0.2 1 0.2
+PIN B   NONINV 1 999 1 0.2 1 0.2
+SEQ Q   Q_NEXT ASYNCH
+
+# Inverting C-element
+LATCH   NC2         20  QN=!A*!B+(!A+!B)*QN_NEXT;
+PIN A   INV 1 999 1 0.2 1 0.2
+PIN B   INV 1 999 1 0.2 1 0.2
+SEQ QN  QN_NEXT ASYNCH

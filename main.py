@@ -4,7 +4,9 @@ from gates import and_gate
 from gates import celem_var1
 from gates import nor_gate
 from sg_parser import load_sg
+from lib_parser import load_lib
 from collections import defaultdict
+from verilog_parser import load_verilog
 
 import json
 
@@ -37,13 +39,37 @@ def not_in_list(list_):
     return lambda item: item in list_
 
 
-def verify_circuit(circuit, sg):
+def unzip(zipped):
+    """Unzips zipped lists."""
+    return zip(*zipped)
+
+
+def verify_circuit(lib, circuit, sg):
     """Check if circuit satisfies the spec sg"""
 
-    encoding = circuit["encoding"]
-    initial_state = circuit["initial_state"]
-    implementation = circuit["implementation"]
+    # Add circuit state connections
 
+    add_state_connections(circuit, lib)
+
+    # Get encoding and initial_state
+
+    encoding, initial_state = unzip(circuit["initial_state"].iteritems())
+
+    # Build a library-independent circuit description (an "implementation")
+
+    implementation = {}
+
+    for module in circuit["modules"]:
+
+        gate = lib[module["type"]]
+
+        output_pin = gate["output"]
+
+        inputs = { pin: module["connections"][pin] for pin in gate["inputs"]}
+
+        output = module["connections"][gate["output"]]
+
+        implementation[output] = (gate, inputs)
 
     # Build two data structures from sg:
     #
@@ -93,18 +119,18 @@ def verify_circuit(circuit, sg):
 
             # disovering transitions:
 
-            implementation_trs = set()
+            circuit_trs = set()
 
-            for output, (gate, inputs) in implementation.iteritems():
+            for output, (gate, connections) in implementation.iteritems():
 
-                input_values = [get_signal_value(encoding, state, input_)
-                    for input_ in inputs ]
+                gate_inputs = { port: (get_signal_value(encoding, state, signal))
+                    for port, signal in connections.iteritems() }
 
-                next_sig_state = gate(*input_values)  # post transition
+                next_sig_state = gate["lambda"](**gate_inputs)  # post transition
 
                 if next_sig_state != get_signal_value(encoding, state, output):
                     tran = "%s%s" % (output, "+" if next_sig_state else "-")
-                    implementation_trs.add(tran)
+                    circuit_trs.add(tran)
 
             spec_trs = sg_trs[label]
 
@@ -112,22 +138,23 @@ def verify_circuit(circuit, sg):
             spec_out_trs = all_out_trs & spec_trs
 
             # Enumerate output transitions
-            implementation_out_trs = implementation_trs & all_out_trs
+            circuit_out_trs = circuit_trs & all_out_trs
 
             # Enumerate output transitions that are not in specs
-            invalid_output_trs = implementation_out_trs - spec_trs
+            invalid_output_trs = circuit_out_trs - spec_trs
 
-            print "Transitions (Internal) : %s" % list(implementation_trs & all_int_trs)
+            print "Transitions (Internal) : %s" % list(circuit_trs & all_int_trs)
             print "Transitions (Input)    : %s" % list(spec_inp_trs)
-            print "Transitions (Output)   : %s" % list(implementation_out_trs)
+            print "Transitions (Output)   : %s" % list(circuit_out_trs)
             print ""
 
             if invalid_output_trs:
-                raise Exception("Found non-compliant implementation output transitions: %s", invalid_output_trs)
+                raise Exception("Found non-compliant circuit output transitions: %s",
+                    invalid_output_trs)
 
             # discover next states
 
-            for tr in implementation_trs | spec_inp_trs:
+            for tr in circuit_trs | spec_inp_trs:
                 next_state = get_next_state(encoding, state, tr)
                 next_label = sg_next_states.get((label, tr), label)  # label of next state
                 st_labels[next_state] = next_label
@@ -143,23 +170,34 @@ def verify_circuit(circuit, sg):
     return True
 
 
+def add_state_connections(circuit, lib):
+    """Add feedback connections to circuit state elements."""
+
+    for module in circuit["modules"]:
+
+        gate = lib[module["type"]]
+
+        if gate["type"] == "LATCH":
+            state_pin = gate["state_input"]
+            output_net = module["connections"][gate["output"]]
+            module["connections"][state_pin] = output_net
+
+
 def main():
 
-    circuit = {
-        "implementation": {
-            "ro": (and_gate,   ("ri", "n1")),
-            "n1": (celem_var1, ("n1", "ao", "ri")),
-            "ai": (nor_gate,   ("n1", "ao"))
-        },
-        "encoding": ["ri", "ro", "ai", "ao", "n1"],
-        "initial_state": (0,0,0,0,1)
-    }
+    # Load library, circuit and spec
 
-    sg = load_sg("examples/d-element/spec.sg")
+    lib = load_lib("libraries/workcraft.lib")
 
-    result = verify_circuit(circuit, sg)
+    circuit = load_verilog("examples/d-element/circuit.v")
 
-    print("Result: %s" % ("PASS" if result else "FAIL"))
+    spec = load_sg("examples/d-element/spec.sg")
+
+    # Verify circuit
+
+    result = verify_circuit(lib, circuit, spec)
+
+    print("Result: " + "PASS" if result else "FAIL")
 
 
 if __name__ == "__main__":
