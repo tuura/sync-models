@@ -2,7 +2,8 @@
 	"visiting state .*": "blue bold",
 	"^-+": "blue bold",
 	"^Traceback .*": "red bold",
-	".* : (\\[.+\\])": "red bold",
+	".* : (\\[.+\\])": "green bold",
 	"Result: (PASS)": "green bold",
-	"Result: (FAIL)": "red bold"
+	"Result: (FAIL)": "red bold",
+	"Reason: (.*)": "red"
 }

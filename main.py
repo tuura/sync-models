@@ -59,7 +59,7 @@ def verify_circuit(lib, circuit, sg):
 
     implementation = {}
 
-    for module in circuit["modules"]:
+    for module in circuit["modules"].values():
 
         gate = lib[module["type"]]
 
@@ -103,6 +103,24 @@ def verify_circuit(lib, circuit, sg):
     visited  = { initial_state }
     to_visit = { initial_state }
 
+    show_state = lambda state: "".join(map(str, state))
+
+    # Enumerate atomic transitions
+
+    # 'atomic_trs' is a map tr1 -> [tr2] where tr2 occurs on the same clock time
+    # 'as tr1
+
+    atomic_trs = dict()
+
+    short_delay_invs = [ mod for mod in circuit["modules"].values()
+        if mod.get("short_delay") ]
+
+    for inv in short_delay_invs:
+        inp, out = inv["connections"]["I"], inv["connections"]["ON"]
+
+        atomic_trs[pos_tran(inp)] = [neg_tran(out)]
+        atomic_trs[neg_tran(inp)] = [pos_tran(out)]
+
     # Explore state space
 
     while to_visit:
@@ -113,7 +131,7 @@ def verify_circuit(lib, circuit, sg):
 
             label = st_labels[state]
 
-            print_underlined("visiting state %s (%s):" % (str(state), label))
+            print_underlined("visiting state %s (%s):" % (show_state(state), label))
 
             visited.add(state)
 
@@ -149,17 +167,28 @@ def verify_circuit(lib, circuit, sg):
             print ""
 
             if invalid_output_trs:
-                raise Exception("Found non-compliant circuit output transitions: %s",
-                    invalid_output_trs)
+
+                print "Signal values:"
+
+                for signal, value in zip(encoding, state):
+                    print "%10s = %s" % (signal, value)
+
+                return (False, "Found non-compliant circuit output transition(s): %s" %
+                    list(invalid_output_trs))
 
             # discover next states
 
             for tr in circuit_trs | spec_inp_trs:
                 next_state = get_next_state(encoding, state, tr)
+
+                for tr2 in atomic_trs.get(tr, []):
+                    next_state = get_next_state(encoding, next_state, tr2)
+
+
                 next_label = sg_next_states.get((label, tr), label)  # label of next state
                 st_labels[next_state] = next_label
                 next_to_visit.add(next_state)
-                print "discovered: %s" % str(next_state)
+                print "Discovered state: %s" % show_state(next_state)
 
             print ""
 
@@ -167,13 +196,13 @@ def verify_circuit(lib, circuit, sg):
 
         visited.union(to_visit)
 
-    return True
+    return (True, None)
 
 
 def add_state_connections(circuit, lib):
     """Add feedback connections to circuit state elements."""
 
-    for module in circuit["modules"]:
+    for module in circuit["modules"].values():
 
         gate = lib[module["type"]]
 
@@ -189,15 +218,21 @@ def main():
 
     lib = load_lib("libraries/workcraft.lib")
 
-    circuit = load_verilog("examples/d-element/circuit.v")
+    circuit = load_verilog("examples/HLH/circuit.v")
 
-    spec = load_sg("examples/d-element/spec.sg")
+    # print(json.dumps(circuit, indent=4))
+    # return
+
+    spec = load_sg("examples/HLH/spec.sg")
 
     # Verify circuit
 
-    result = verify_circuit(lib, circuit, spec)
+    result, msg = verify_circuit(lib, circuit, spec)
 
-    print("Result: " + "PASS" if result else "FAIL")
+    print("Result: " + ("PASS" if result else "FAIL"))
+
+    if msg:
+        print "Reason: %s" % msg
 
 
 if __name__ == "__main__":
