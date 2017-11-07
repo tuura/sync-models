@@ -115,7 +115,7 @@ def verify_circuit(libs, circuit, sg):
     # 'atomic_trs' is a map tr1 -> [tr2] where tr2 occurs on the same clock time
     # 'as tr1
 
-    atomic_trs = dict()
+    atomic_trs = defaultdict(list)
 
     short_delay_invs = [ mod for mod in circuit["modules"].values()
         if mod.get("short_delay") ]
@@ -123,8 +123,8 @@ def verify_circuit(libs, circuit, sg):
     for inv in short_delay_invs:
         inp, out = inv["connections"]["I"], inv["connections"]["ON"]
 
-        atomic_trs[pos_tran(inp)] = [neg_tran(out)]
-        atomic_trs[neg_tran(inp)] = [pos_tran(out)]
+        atomic_trs[pos_tran(inp)].append(neg_tran(out))
+        atomic_trs[neg_tran(inp)].append(pos_tran(out))
 
     # Explore state space
 
