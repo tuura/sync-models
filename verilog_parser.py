@@ -17,60 +17,56 @@ def create_circuit():
         "assignments": {} }
 
 
-def add_module(circuit, module_def):
+def add_module(circuit, module_type, module_name, connections_str):
     """Add a module defined in tuple 'module_def' to JSON object 'circuit'."""
 
-    if module_def[0] == "module":
+    if module_type == "module":
 
         # circuit definition
-        circuit["name"] = module_def[1]
+        circuit["name"] = module_name
 
     else:
 
         # module instantiation
 
-        instance = module_def[1]
-
         module = {
-            "type": module_def[0],
+            "type": module_type,
             "connections": {}
         }
 
         con_reg = r".(?P<pin>\w+)[\s]*\([\s]*(?P<net>\w+)[\s]*\)[\s]*"
-        con_str = module_def[2]
-        matches = re.compile(con_reg).findall(con_str)
+        matches = re.compile(con_reg).findall(connections_str)
 
         for item in matches:
             pin, net = item
             module["connections"][pin] = net
 
-        circuit["modules"][instance] = module
+        circuit["modules"][module_name] = module
 
 
-def add_state(circuit, state_def):
+def add_state(circuit, state_str):
     """Add circuit initial state information."""
 
-    words = re.compile("([!\w]+)").findall(state_def)
+    words = re.compile("([!\w]+)").findall(state_str)
 
     for item in words:
 
-        if item[0] == "!":
-            net, state = item[1:], 0
-        else:
-            net, state = item, 1
+        inverted = item[0] == "!"
+        state = 0 if inverted else 1
+        net = item[1:] if inverted else item
 
         circuit["initial_state"][net] = state
 
 
-def add_inputs(circuit, inputs_def):
+def add_inputs(circuit, nets_str):
 
-    nets = re.compile("(\w+)").findall(inputs_def)
+    nets = re.compile("(\w+)").findall(nets_str)
     circuit["inputs"] = list(nets)
 
 
-def add_outputs(circuit, outputs_def):
+def add_outputs(circuit, nets_str):
 
-    nets = re.compile("(\w+)").findall(outputs_def)
+    nets = re.compile("(\w+)").findall(nets_str)
     circuit["outputs"] = list(nets)
 
 
@@ -79,20 +75,17 @@ def add_delay_pragma(circuit, instance):
     circuit["modules"][instance]["short_delay"] = True
 
 
-def add_assign(circuit, assign_def):
+def add_assign(circuit, out, inp):
 
     # Assign statements are treated as virtual modules. Their instance names are
     # prefixed with * to make them non-compliant with the Verilog standard (and
     # thus obviously in need of special treatment).
 
-    instance = "*%s" % assign_def[0]
+    instance = "*%s" % out
 
     circuit["modules"][instance] = {
         "type": "*assign",
-        "connections": {
-            "inp": assign_def[1],
-            "out": assign_def[0]
-        }
+        "connections": { "inp": inp, "out": out }
     }
 
 
@@ -117,7 +110,7 @@ def load_verilog(file):
     # reg_outputs : matches output statements
     # reg_delay   : matches short delay pragmas
 
-    reg_module  = r"(?P<module>\w+)\s+(?P<instance>\w+)\s+\((?P<ports>[^;]+)\);"
+    reg_module  = r"(\w+)\s+(\w+)\s+\(([^;]+)\);"
     reg_state   = r"\/\/ signal values at the initial state:\s*\/\/\s*(.+)$"
     reg_inputs  = r"\s*input\s+(.+);$"
     reg_outputs = r"\s*output\s+(.+);$"
@@ -140,7 +133,8 @@ def load_verilog(file):
         matches = re.compile(reg, flags=re.MULTILINE).findall(content)
 
         for item in matches:
-            parse_(circuit, item)
+            args = [item] if type(item) is str else item
+            parse_(circuit, *args)
 
     return circuit
 

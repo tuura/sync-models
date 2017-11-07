@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from gates import and_gate
-from gates import celem_var1
-from gates import nor_gate
 from sg_parser import load_sg
 from lib_parser import load_lib
 from lib_parser import builtins_lib
@@ -13,6 +10,7 @@ import json
 
 
 def get_next_state(encoding, state, transition):
+    """Compute the next after a transition."""
     signal = transition[:-1]
     ind = encoding.index(signal)  # signal index
     val = 1 if transition[-1] == "+" else 0
@@ -21,6 +19,7 @@ def get_next_state(encoding, state, transition):
 
 
 def get_signal_value(encoding, state, signal):
+    """Return signal state/value."""
     ind = encoding.index(signal)
     return state[ind]
 
@@ -28,16 +27,6 @@ def get_signal_value(encoding, state, signal):
 def print_underlined(str_):
     print "%s" % str_
     print "%s\n" % ("-" * len(str_))
-
-
-def in_list(list_):
-    """Return a function that checks if item is in list"""
-    return lambda item: item in list_
-
-
-def not_in_list(list_):
-    """Return a function that checks if item is not in list"""
-    return lambda item: item in list_
 
 
 def unzip(zipped):
@@ -184,10 +173,12 @@ def verify_circuit(libs, circuit, sg):
 
             if invalid_output_trs:
 
-                print "Signal values:"
+                print "Signal values:\n"
 
                 for signal, value in zip(encoding, state):
                     print "%10s = %s" % (signal, value)
+
+                print ""
 
                 return (False, "Found non-compliant circuit output transition(s): %s" %
                     list(invalid_output_trs))
@@ -234,9 +225,9 @@ def main():
 
     workcraft_lib = load_lib("libraries/workcraft.lib")
 
-    circuit = load_verilog("examples/HLH/circuit.v")
+    circuit = load_verilog("examples/OCH/circuit.v")
 
-    spec = load_sg("examples/HLH/spec.sg")
+    spec = load_sg("examples/OCH/spec.sg")
 
     # Verify circuit
 
