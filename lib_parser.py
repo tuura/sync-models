@@ -1,6 +1,17 @@
-
-
 import re
+
+
+builtins_lib = {
+    "*assign": {
+        "type": "GATE",
+        "state_input": None,
+        "name": "*assign",
+        "output": "out",
+        "inputs": ["inp"],
+        "definition": "out=inp",
+        "lambda": (lambda inp: inp)
+    }
+}
 
 
 def make_int_lambda(boolean_lambda):

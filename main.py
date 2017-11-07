@@ -5,6 +5,7 @@ from gates import celem_var1
 from gates import nor_gate
 from sg_parser import load_sg
 from lib_parser import load_lib
+from lib_parser import builtins_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
 
@@ -40,12 +41,27 @@ def not_in_list(list_):
 
 
 def unzip(zipped):
-    """Unzips zipped lists."""
+    """Unzip zipped lists."""
     return zip(*zipped)
 
 
-def verify_circuit(lib, circuit, sg):
-    """Check if circuit satisfies the spec sg"""
+def merge_dicts(dicts):
+    """Merge a list of dictionaries."""
+
+    result = dict()
+
+    for dict_ in dicts:
+        result.update(dict_)
+
+    return result
+
+
+def verify_circuit(libs, circuit, sg):
+    """Check if circuit satisfies the spec sg."""
+
+    # Merge libs
+
+    lib = merge_dicts(libs)
 
     # Add circuit state connections
 
@@ -216,18 +232,17 @@ def main():
 
     # Load library, circuit and spec
 
-    lib = load_lib("libraries/workcraft.lib")
+    workcraft_lib = load_lib("libraries/workcraft.lib")
 
     circuit = load_verilog("examples/HLH/circuit.v")
-
-    # print(json.dumps(circuit, indent=4))
-    # return
 
     spec = load_sg("examples/HLH/spec.sg")
 
     # Verify circuit
 
-    result, msg = verify_circuit(lib, circuit, spec)
+    libs = [workcraft_lib, builtins_lib]
+
+    result, msg = verify_circuit(libs, circuit, spec)
 
     print("Result: " + ("PASS" if result else "FAIL"))
 

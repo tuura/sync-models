@@ -13,7 +13,8 @@ import json
 def create_circuit():
     """Return a blank new circuit."""
 
-    return { "name": None, "modules": {}, "initial_state": {} }
+    return { "name": None, "modules": {}, "initial_state": {},
+        "assignments": {} }
 
 
 def add_module(circuit, module_def):
@@ -78,6 +79,23 @@ def add_delay_pragma(circuit, instance):
     circuit["modules"][instance]["short_delay"] = True
 
 
+def add_assign(circuit, assign_def):
+
+    # Assign statements are treated as virtual modules. Their instance names are
+    # prefixed with * to make them non-compliant with the Verilog standard (and
+    # thus obviously in need of special treatment).
+
+    instance = "*%s" % assign_def[0]
+
+    circuit["modules"][instance] = {
+        "type": "*assign",
+        "connections": {
+            "inp": assign_def[1],
+            "out": assign_def[0]
+        }
+    }
+
+
 def load_verilog(file):
 
     # Read file content
@@ -104,13 +122,15 @@ def load_verilog(file):
     reg_inputs  = r"\s*input\s+(.+);$"
     reg_outputs = r"\s*output\s+(.+);$"
     reg_delay   = r"^\s*\/\/ This inverter should have a short delay\s*INV (\S*)"
+    reg_assign  = r"^\s*assign (\S+) = (\S+);$"
 
     mini_parsers = [
         (reg_module  , add_module),
-        (reg_state   ,  add_state),
+        (reg_state   , add_state),
         (reg_inputs  , add_inputs),
         (reg_outputs , add_outputs),
-        (reg_delay   , add_delay_pragma)
+        (reg_delay   , add_delay_pragma),
+        (reg_assign  , add_assign)
     ]
 
     # Parse and return result
