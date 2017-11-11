@@ -2,6 +2,7 @@
 
 from sg_parser import load_sg
 from lib_parser import load_lib
+from lib_parser import merge_libs
 from lib_parser import builtins_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
@@ -34,23 +35,8 @@ def unzip(zipped):
     return zip(*zipped)
 
 
-def merge_dicts(dicts):
-    """Merge a list of dictionaries."""
-
-    result = dict()
-
-    for dict_ in dicts:
-        result.update(dict_)
-
-    return result
-
-
-def verify_circuit(libs, circuit, sg):
+def verify_circuit(lib, circuit, sg):
     """Check if circuit satisfies the spec sg."""
-
-    # Merge libs
-
-    lib = merge_dicts(libs)
 
     # Add circuit state connections
 
@@ -225,15 +211,15 @@ def main():
 
     workcraft_lib = load_lib("libraries/workcraft.lib")
 
-    circuit = load_verilog("examples/OCH/circuit.v")
+    lib = merge_libs([workcraft_lib, builtins_lib])
 
-    spec = load_sg("examples/OCH/spec.sg")
+    circuit = load_verilog("examples/handshake/circuit.v")
 
-    # Verify circuit
+    spec = load_sg("examples/handshake/spec.sg")
 
-    libs = [workcraft_lib, builtins_lib]
+    # Merge libs
 
-    result, msg = verify_circuit(libs, circuit, spec)
+    result, msg = verify_circuit(lib, circuit, spec)
 
     print("Result: " + ("PASS" if result else "FAIL"))
 

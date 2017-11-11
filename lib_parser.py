@@ -25,6 +25,17 @@ def make_int_lambda(boolean_lambda):
     return int_lambda
 
 
+def merge_libs(libs):
+    """Merge a list of libraries."""
+
+    merged = dict()
+
+    for lib in libs:
+        merged.update(lib)
+
+    return merged
+
+
 def get_lambda(gate_def, inputs):
     """Return a Python lambda from a lib gate definition and set of inputs."""
 
