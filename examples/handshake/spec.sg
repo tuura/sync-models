@@ -1,0 +1,10 @@
+.model Test1
+.inputs req
+.outputs ack
+.state graph
+s0 req+ s1
+s1 ack+ s2
+s2 req- s3
+s3 ack- s0
+.marking {s0}
+.end
