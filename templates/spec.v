@@ -12,13 +12,13 @@ module spec (
 
     // enable signal constraint
 
-    wire [{{ ena_bits }}-1:0] ena;
+    wire [{{ ena_bits-1 }}:0] ena;
 
     ena_onehot : assume property ( `clk_rst $onehot0(ena) );
 
     // model (derived from sg)
 
-    reg [{{ state_bits }}-1:0] state;
+    reg [{{ state_bits-1 }}:0] state;
 
     always @(posedge clk or posedge reset) begin
 
@@ -61,3 +61,16 @@ module spec (
     {%- endfor %}
 
 endmodule
+
+module bind_info();
+
+bind circuit spec u1 (
+          .reset(reset)
+        , .clk(clk)
+        , .ena(ena)
+        {%- for signal in signals %}
+        , .{{signal}}({{ signal }})
+        {%- endfor %}
+    );
+
+endmodule;

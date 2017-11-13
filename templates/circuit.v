@@ -20,8 +20,8 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
 	DFF {{input}}_ff (
 		.CK(clk),
-		.RS({{ "reset" if initial_value else "1'b0"  }}),
-		.ST({{ "1'b0"  if initial_value else "reset" }}),
+		.ST({{ "reset" if initial_value else "1'b0"  }}),
+		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.D(~{{input}}),
 		.Q({{input}}),
 		.ENA(ena[{{loop.index0}}])
