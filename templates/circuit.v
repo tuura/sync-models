@@ -12,6 +12,8 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 	output {{ inputs  | join(', ') }};
 	output {{ outputs | join(', ') }};
 
+	// Input state FFs
+
 	{%- for input in inputs %}
 
 	{% set initial_value = circuit["initial_state"][input] -%}
@@ -52,22 +54,30 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 	);
 
 	{%- set output_net = gate["connections"][output_pin] %}
+	{%- set output_pre = output_net + "_precap" %}
+	{%- set ena_ind = loop.index0 + inputs|length %}
 
 	DFF {{instance}}_ff (
 		.CK(clk),
 		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.ST({{ "reset" if initial_value else "1'b0"  }}),
-		.D({{output_net}}_precap),
+		.D({{output_pre}}),
 		.Q({{output_net}}),
-		.ENA(ena[{{ loop.index0 + inputs|length }}])
+		.ENA(ena[{{ ena_ind }}])
 	);
 
+	assign {{output_net}}_ena = ena[{{ ena_ind }}];
+
 	{%- else %}
+
+	{%- set output_net = gate["connections"][output_pin] %}
+	{%- set ena_ind = loop.index0 + inputs|length %}
 
 	{{gate["type"]}} {{instance}} (
 		.CK(clk),
 		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.ST({{ "reset" if initial_value else "1'b0"  }}),
+		.ENA(ena[{{ena_ind}}]),
 
 		{%- for pin, net in gate["connections"].iteritems() %}
 		{%- if pin == output_pin %}
@@ -78,6 +88,8 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
 		{%- endfor %}
 	);
+
+	assign {{output_net}}_ena = ena[{{ ena_ind }}];
 
 	{%- endif %}
 

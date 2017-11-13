@@ -32,7 +32,7 @@ module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
             {%- set initial_ind = state_inds[initial] %}
 
-            state <= {{ initial_ind }};
+            state <= {{ initial_ind }}; // {{ initial }}
 
         end else begin
 
@@ -45,7 +45,7 @@ module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
             {%- set to_ind = state_inds[to] %}
 
             {%- set verilog_tr = ("~" + signal) if sign == "-" else signal %}
-            if (state == {{ from_ind }} && {{ verilog_tr }} ) state <= {{ to_ind }};
+            if (state == {{ from_ind }} && {{ verilog_tr }} ) state <= {{ to_ind }};  // {{ to }}
             {%- endfor %}
 
         end
