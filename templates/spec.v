@@ -30,12 +30,22 @@ module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
         if (reset) begin
 
-            state <= {{ initial }};
+            {%- set initial_ind = state_inds[initial] %}
+
+            state <= {{ initial_ind }};
 
         end else begin
 
             {%- for from, tr, to in transitions %}
-            if (state == {{ from }} && {{ tr}} ) state <= {{ to }};
+
+            {%- set signal = tr[:-1] %}
+            {%- set sign = tr[-1] %}
+
+            {%- set from_ind = state_inds[from] %}
+            {%- set to_ind = state_inds[to] %}
+
+            {%- set verilog_tr = ("~" + signal) if sign == "-" else signal %}
+            if (state == {{ from_ind }} && {{ verilog_tr }} ) state <= {{ to_ind }};
             {%- endfor %}
 
         end
@@ -44,15 +54,22 @@ module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
     // Properties
 
-    {%- for _, tr, _ in transitions %}
+    {%- for signal in inputs + outputs %}
 
-    {%- set prefix = tr[0] %}
-    {%- set signal = tr[1:] %}
-    {%- set tr_ena_signal = signal + ("_can_fall" if prefix=="~" else "_can_rise") %}
+    {%- set rise_tr = signal + "+" %}
+    {%- set fall_tr = signal + "-" %}
 
-    wire {{ tr_ena_signal }} = 0
-        {%- for prior, tr2, _ in transitions if tr == tr2 %}
-        {{ "|| (state == %s)"|format(prior) }}
+    wire {{ signal }}_can_fall = 0
+        {%- for prior, tr, _ in transitions if tr == fall_tr %}
+        {%- set prior_ind = state_inds[prior] %}
+        {{ "|| (state == %d)"|format(prior_ind) }}
+        {%- endfor %}
+        ;
+
+    wire {{ signal }}_can_rise = 0
+        {%- for prior, tr, _ in transitions if tr == rise_tr %}
+        {%- set prior_ind = state_inds[prior] %}
+        {{ "|| (state == %d)"|format(prior_ind) }}
         {%- endfor %}
         ;
 

@@ -24,32 +24,13 @@ def write_file(content, file):
         fid.write(content)
 
 
-def get_states(spec):
-    """Return a list of the states in spec."""
-    sublists = [ [item[0], item[2]] for item in spec["transitions"] ]
-    flattened = sum(sublists, [])
-    return sorted(set(flattened))
-
-
-def format_tr(tr):
-    """Given a transition 'tr' in the form 'req+', 'req-', return the Verilog
-    equivalent (e.g. 'req' and '~req')."""
-    signal, sign = tr[:-1], tr[-1]
-    prefix = "~" if sign=="-" else " "  # use space to maintain symmetry
-    return prefix + signal
-
-
-def format_spec(spec):
-
-    states = get_states(spec)
+def get_state_inds(spec):
+    """Returns a map: state -> unique index."""
+    froms = [ item[0] for item in spec["transitions"]]
+    tos   = [ item[1] for item in spec["transitions"]]
+    states = sorted(set(froms + tos))
     inds = { state: ind for ind, state in enumerate(states) }
-
-    def format_item(item):
-        state1, tr, state2 = item
-        return [ inds[state1], format_tr(tr), inds[state2] ]
-
-    spec["transitions"] = map(format_item, spec["transitions"])
-    spec["initial_state"] = inds[spec["initial_state"]]
+    return inds
 
 
 def generate(spec, circuit, lib, template):
@@ -57,7 +38,8 @@ def generate(spec, circuit, lib, template):
     context = {
         "lib" : lib,
         "spec" : spec,
-        "circuit" : circuit
+        "circuit" : circuit,
+        "state_inds": get_state_inds(spec)
     }
 
     template = Template(read_file(template))
@@ -72,8 +54,6 @@ def main():
     lib     = load_lib("libraries/workcraft.lib")
     spec    = load_sg("examples/d-element/spec.sg")
     circuit = load_verilog("examples/d-element/circuit.v")
-
-    format_spec(spec)
 
     spec_str    = generate(spec, circuit, lib, "templates/spec.v")
     circuit_str = generate(spec, circuit, lib, "templates/circuit.v")
