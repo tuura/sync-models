@@ -1,14 +1,20 @@
+// vi: set ft=verilog :
+
+{%- set inputs = spec["inputs"] %}
+{%- set outputs = spec["outputs"] %}
+{%- set initial = spec["initial_state"] %}
+{%- set ena_bits = circuit["initial_state"]|length %}
+{%- set transitions = spec["transitions"]|sort %}
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
-module spec (
-          input reset
-        , input clk
-        , input ena
-        {%- for signal in signals %}
-        , input {{ signal }}
-        {%- endfor %}
-    );
+module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
+
+    input reset, clk;
+    input [{{ena_bits-1}}:0] ena;
+
+    input {{ inputs  | join(', ') }};
+    input {{ outputs | join(', ') }};
 
     // enable signal constraint
 
@@ -18,7 +24,7 @@ module spec (
 
     // model (derived from sg)
 
-    reg [{{ state_bits-1 }}:0] state;
+    integer state;
 
     always @(posedge clk or posedge reset) begin
 
@@ -38,13 +44,17 @@ module spec (
 
     // Properties
 
-    {%- for tr, states in valid_states.iteritems() %}
+    {%- for _, tr, _ in transitions %}
 
-    wire {{ can_transition[tr] }} = 0
-        {%- for state in states %}
-        || (state == {{ state }})
+    {%- set prefix = tr[0] %}
+    {%- set signal = tr[1:] %}
+    {%- set tr_ena_signal = signal + ("_can_fall" if prefix=="~" else "_can_rise") %}
+
+    wire {{ tr_ena_signal }} = 0
+        {%- for prior, tr2, _ in transitions if tr == tr2 %}
+        {{ "|| (state == %s)"|format(prior) }}
         {%- endfor %}
-    ;
+        ;
 
     {%- endfor %}
 
@@ -68,9 +78,9 @@ bind circuit spec u1 (
           .reset(reset)
         , .clk(clk)
         , .ena(ena)
-        {%- for signal in signals %}
+        {%- for signal in inputs+outputs %}
         , .{{signal}}({{ signal }})
         {%- endfor %}
     );
 
-endmodule;
+endmodule
