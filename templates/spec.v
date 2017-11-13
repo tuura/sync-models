@@ -16,11 +16,17 @@ module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
     input {{ inputs  | join(', ') }};
     input {{ outputs | join(', ') }};
 
-    // enable signal constraint
+    // enable signal constraints
 
-    wire [{{ ena_bits-1 }}:0] ena;
+    wire [7:0] ena;
+
+    reg [7:0] ena_negedge;
+
+    always @(negedge clk) ena_negedge = ena;
 
     ena_onehot : assume property ( `clk_rst $onehot0(ena) );
+
+    ena_cycle_stable : assume property(`clk_rst ena == ena_negedge);
 
     // model (derived from sg)
 
