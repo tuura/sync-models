@@ -7,6 +7,7 @@ from lib_parser import load_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
 
+import os
 import json
 
 def read_file(file):
@@ -100,7 +101,7 @@ def generate_verilog_spec(spec, circuit, template="templates/spec.v"):
 
     template = Template(read_file(template))
 
-    print template.render(context)
+    return template.render(context)
 
 
 def generate_verilog_circuit(spec, circuit, lib, template="templates/circuit.v"):
@@ -113,24 +114,36 @@ def generate_verilog_circuit(spec, circuit, lib, template="templates/circuit.v")
 
     template = Template(read_file(template))
 
-    print template.render(context)
+    return template.render(context)
+
+
+def write_file(content, file):
+    """Write string 'content' to file."""
+    with open(file, "w") as fid:
+        fid.write(content)
+
 
 def main():
 
-    spec = load_sg("examples/d-element/spec.sg")
+    output_dir = "generated"
 
+    lib     = load_lib("libraries/workcraft.lib")
+    spec    = load_sg("examples/d-element/spec.sg")
     circuit = load_verilog("examples/d-element/circuit.v")
-
-    workcraft_lib = load_lib("libraries/workcraft.lib")
 
     format_spec(spec)
 
-    # print json.dumps(circuit, indent=4)
-    generate_verilog_circuit(spec, circuit, workcraft_lib)
-    return
+    spec_str    = generate_verilog_spec(spec, circuit)
+    circuit_str = generate_verilog_circuit(spec, circuit, lib)
 
-    # generate_properties(spec)
-    generate_verilog_spec(spec, circuit)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    spec_file    = os.path.join(output_dir, "spec.v")
+    circuit_file = os.path.join(output_dir, "circuit.v")
+
+    write_file(spec_str, spec_file)
+    write_file(circuit_str, circuit_file)
 
 
 if __name__ == '__main__':
