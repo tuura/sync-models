@@ -5,5 +5,10 @@
 	".* : (\\[.+\\])": "green bold",
 	"Result: (PASS)": "green bold",
 	"Result: (FAIL)": "red bold",
-	"Reason: (.*)": "red"
+	"Reason: (.*)": "red",
+	"FormalVerifier>": "bold blue",
+	"Verification mode:": "bold",
+	"Assertion Summary:": "bold",
+	" Fail": "red bold",
+	" Pass": "green bold"
 }
