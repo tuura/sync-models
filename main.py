@@ -157,6 +157,9 @@ def verify_circuit(lib, circuit, sg):
             print "Transitions (Output)   : %s" % list(circuit_out_trs)
             print ""
 
+            if not (circuit_trs or spec_inp_trs):
+                return (False, "Deadlock in state %s (%s)" % (show_state(state), label))
+
             if invalid_output_trs:
 
                 print "Signal values:\n"
