@@ -3,11 +3,12 @@
 {%- set inputs = spec["inputs"] %}
 {%- set outputs = spec["outputs"] %}
 {%- set ena_bits = circuit["modules"]|length + inputs|length %}
+{%- set ntransitions = circuit["initial_state"]|length %}
 
 module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
 	input reset, clk;
-	input [{{ena_bits-1}}:0] ena;
+	input [{{bit_size(ntransitions)-1}}:0] ena;
 
 	output {{ inputs  | join(', ') }};
 	output {{ outputs | join(', ') }};
@@ -26,7 +27,7 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.D(~{{input}}),
 		.Q({{input}}),
-		.ENA(ena[{{loop.index0}}])
+		.ENA(ena == {{loop.index0}})
 	);
 
 	{%- endfor -%}
@@ -63,10 +64,8 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 		.ST({{ "reset" if initial_value else "1'b0"  }}),
 		.D({{output_pre}}),
 		.Q({{output_net}}),
-		.ENA(ena[{{ ena_ind }}])
+		.ENA(ena == {{ena_ind}})
 	);
-
-	assign {{output_net}}_ena = ena[{{ ena_ind }}];
 
 	{%- else %}
 
@@ -77,7 +76,7 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 		.CK(clk),
 		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.ST({{ "reset" if initial_value else "1'b0"  }}),
-		.ENA(ena[{{ena_ind}}]),
+		.ENA(ena == {{ena_ind}}),
 
 		{%- for pin, net in gate["connections"].iteritems() %}
 		{%- if pin == output_pin %}
@@ -88,8 +87,6 @@ module circuit (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
 
 		{%- endfor %}
 	);
-
-	assign {{output_net}}_ena = ena[{{ ena_ind }}];
 
 	{%- endif %}
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-from math import ceil
-from math import log
 from jinja2 import Template
 from sg_parser import load_sg
 from lib_parser import load_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
+from lib_parser import merge_libs
 
 import os
 import re
 import json
+import math
 
 
 def read_file(file):
@@ -53,13 +53,20 @@ def get_state_inds(spec):
     return inds
 
 
+def bit_size(n):
+    """Return minimum number of bits required to represent n."""
+    bits = math.log(n) / math.log(2)
+    return int(math.ceil(bits))
+
+
 def generate(spec, circuit, lib, template):
 
     context = {
         "lib" : lib,
         "spec" : spec,
         "circuit" : circuit,
-        "state_inds": get_state_inds(spec)
+        "state_inds": get_state_inds(spec),
+        "bit_size": bit_size
     }
 
     template = Template(read_file(template))

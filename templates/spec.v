@@ -3,28 +3,38 @@
 {%- set inputs = spec["inputs"] %}
 {%- set outputs = spec["outputs"] %}
 {%- set initial = spec["initial_state"] %}
-{%- set ena_bits = circuit["initial_state"]|length %}
 {%- set transitions = spec["transitions"]|sort %}
+{%- set ntransitions = circuit["initial_state"]|length %}
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
-module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
+module spec (reset, clk, ena, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(', ')}} );
 
     input reset, clk;
-    input [{{ena_bits-1}}:0] ena;
+    input [{{bit_size(ntransitions)-1}}:0] ena;
+
+    {%- if dbits -%}
+        {%- if dbits > 1 %}
+    input [{{dbits-1}}:0] det;
+        {%- elif dbits == 1 %}
+    input det;
+        {%- endif -%}
+    {%- endif %}
 
     input {{ inputs  | join(', ') }};
     input {{ outputs | join(', ') }};
 
     // enable signal constraints
 
-    wire [7:0] ena;
-
-    reg [7:0] ena_negedge;
+    reg [{{bit_size(ntransitions)-1}}:0] ena_negedge;
 
     always @(negedge clk) ena_negedge = ena;
 
-    ena_onehot : assume property ( `clk_rst $onehot0(ena) );
+    // Note:
+    // - ena = [0, {{ntransitions}}] -> transition #ena is
+    // - ena = {{ntransitions+1}} -> all transitions are disabled
+
+    ena_in_range : assume property ( `clk_rst ena <= {{ntransitions + 1}} );
 
     ena_cycle_stable : assume property(`clk_rst ena == ena_negedge);
 
@@ -41,15 +51,11 @@ module spec (reset, clk, ena, {{ (inputs+outputs)|join(', ')}});
             state <= {{ initial_ind }}; // {{ initial }}
 
         end else begin
-
-            {%- for from, tr, to in transitions %}
-
-            {%- set signal = tr[:-1] %}
-            {%- set sign = tr[-1] %}
-
-            {%- set from_ind = state_inds[from] %}
-            {%- set to_ind = state_inds[to] %}
-
+            {% for from, tr, to in transitions -%}
+            {%- set signal = tr[:-1] -%}
+            {%- set sign = tr[-1] -%}
+            {%- set from_ind = state_inds[from] -%}
+            {%- set to_ind = state_inds[to] -%}
             {%- set verilog_tr = ("~" + signal) if sign == "-" else signal %}
             if (state == {{ from_ind }} && {{ verilog_tr }} ) state <= {{ to_ind }};  // {{ to }}
             {%- endfor %}
