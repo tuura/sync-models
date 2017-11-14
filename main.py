@@ -212,13 +212,13 @@ def main():
 
     # Load library, circuit and spec
 
+    extra_lib = load_lib("libraries/extra.lib")
     workcraft_lib = load_lib("libraries/workcraft.lib")
+    lib = merge_libs(workcraft_lib, builtins_lib, extra_lib)
 
-    lib = merge_libs([workcraft_lib, builtins_lib])
+    circuit = load_verilog("examples/SRAM-master/circuit.v")
 
-    circuit = load_verilog("examples/handshake/circuit.v")
-
-    spec = load_sg("examples/handshake/spec.sg")
+    spec = load_sg("examples/SRAM-master/spec.sg")
 
     # Merge libs
 

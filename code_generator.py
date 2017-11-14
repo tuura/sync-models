@@ -79,8 +79,8 @@ def main():
     output_dir = "generated"
 
     lib     = load_lib("libraries/workcraft.lib")
-    spec    = load_sg("examples/buck-merged/spec.sg")
-    circuit = load_verilog("examples/buck-merged/circuit.v")
+    spec    = load_sg("examples/SRAM-master/spec.sg")
+    circuit = load_verilog("examples/SRAM-master/circuit.v")
 
     spec_str    = generate(spec, circuit, lib, "templates/spec.v")
     circuit_str = generate(spec, circuit, lib, "templates/circuit.v")

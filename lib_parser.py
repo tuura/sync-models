@@ -25,7 +25,7 @@ def make_int_lambda(boolean_lambda):
     return int_lambda
 
 
-def merge_libs(libs):
+def merge_libs(*libs):
     """Merge a list of libraries."""
 
     merged = dict()
