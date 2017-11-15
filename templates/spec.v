@@ -4,14 +4,14 @@
 {%- set outputs = spec["outputs"] %}
 {%- set initial = spec["initial_state"] %}
 {%- set transitions = spec["transitions"]|sort %}
-{%- set ntransitions = circuit["initial_state"]|length %}
+{%- set ntransitions = (inputs+stateful.values())|length %}
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
-module spec (reset, clk, ena, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(', ')}} );
+module spec (reset, clk, fire, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(', ')}} );
 
     input reset, clk;
-    input [{{bit_size(ntransitions)-1}}:0] ena;
+    input [{{bit_size(ntransitions)-1}}:0] fire;
 
     {%- if dbits -%}
         {%- if dbits > 1 %}
@@ -24,19 +24,19 @@ module spec (reset, clk, ena, {{ "det, " if dbits -}} {{ (inputs+outputs)|join('
     input {{ inputs  | join(', ') }};
     input {{ outputs | join(', ') }};
 
-    // enable signal constraints
+    // fire signal constraints
 
-    reg [{{bit_size(ntransitions)-1}}:0] ena_negedge;
+    reg [{{bit_size(ntransitions)-1}}:0] fire_ne;  // fire, sampled on negedge
 
-    always @(negedge clk) ena_negedge = ena;
+    always @(negedge clk) fire_ne = fire;
 
     // Note:
-    // - ena = [0, {{ntransitions}}] -> transition #ena is
-    // - ena = {{ntransitions+1}} -> all transitions are disabled
+    // - fire = [0, {{ntransitions}}] -> transition #fire is enabled
+    // - fire = {{ntransitions+1}} -> all transitions are disabled
 
-    ena_in_range : assume property ( `clk_rst ena <= {{ntransitions + 1}} );
+    ena_in_range : assume property ( `clk_rst fire <= {{ntransitions + 1}} );
 
-    ena_cycle_stable : assume property(`clk_rst ena == ena_negedge);
+    ena_cycle_stable : assume property(`clk_rst fire == fire_ne);
 
     // model (derived from sg)
 
@@ -64,7 +64,7 @@ module spec (reset, clk, ena, {{ "det, " if dbits -}} {{ (inputs+outputs)|join('
 
     end
 
-    // Properties
+    // Spec Compliance Properties:
 
     {%- for signal in inputs + outputs %}
 
@@ -106,7 +106,7 @@ module bind_info();
 bind circuit spec u1 (
           .reset(reset)
         , .clk(clk)
-        , .ena(ena)
+        , .fire(fire)
         {%- for signal in inputs+outputs %}
         , .{{signal}}({{ signal }})
         {%- endfor %}

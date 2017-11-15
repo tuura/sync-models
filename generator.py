@@ -61,12 +61,20 @@ def bit_size(n):
 
 def generate(spec, circuit, lib, template):
 
+    stateful = { inst: body for inst, body in circuit["modules"].iteritems()
+        if not body.get("short_delay") }
+
+    stateless = { inst: body for inst, body in circuit["modules"].iteritems()
+        if body.get("short_delay") }
+
     context = {
-        "lib" : lib,
-        "spec" : spec,
-        "circuit" : circuit,
-        "state_inds": get_state_inds(spec),
-        "bit_size": bit_size
+        "lib"           : lib,
+        "spec"          : spec,
+        "bit_size"      : bit_size,
+        "stateful"      : stateful,
+        "stateless"     : stateless,
+        "state_inds"    : get_state_inds(spec),
+        "initial_state" : circuit["initial_state"]
     }
 
     template = Template(read_file(template))
