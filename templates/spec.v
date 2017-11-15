@@ -8,10 +8,21 @@
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
-module spec (reset, clk, fire, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(', ')}} );
+module spec (
+          input reset
+        , input clk
+        , input [{{bit_size(ntransitions)-1}}:0] fire
+        {{- ", det" if dbits -}}
 
-    input reset, clk;
-    input [{{bit_size(ntransitions)-1}}:0] fire;
+        {% for input in inputs %}
+        , input {{ input }} // input
+        {%- endfor %}
+
+        {%- for _, mod in stateful.iteritems() %}
+        , input {{ get_output_net(mod) }} // {{"output" if get_output_net(mod) in outputs else "internal"}}
+        , input {{ get_output_net(mod) }}_precap
+        {%- endfor %}
+    );
 
     {%- if dbits -%}
         {%- if dbits > 1 %}
@@ -20,9 +31,6 @@ module spec (reset, clk, fire, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(
     input det;
         {%- endif -%}
     {%- endif %}
-
-    input {{ inputs  | join(', ') }};
-    input {{ outputs | join(', ') }};
 
     // fire signal constraints
 
@@ -34,9 +42,9 @@ module spec (reset, clk, fire, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(
     // - fire = [0, {{ntransitions}}] -> transition #fire is enabled
     // - fire = {{ntransitions+1}} -> all transitions are disabled
 
-    ena_in_range : assume property ( `clk_rst fire <= {{ntransitions + 1}} );
+    fire_in_range : assume property ( `clk_rst fire <= {{ntransitions + 1}} );
 
-    ena_cycle_stable : assume property(`clk_rst fire == fire_ne);
+    fire_cycle_stable : assume property(`clk_rst fire == fire_ne);
 
     // model (derived from sg)
 
@@ -75,28 +83,44 @@ module spec (reset, clk, fire, {{ "det, " if dbits -}} {{ (inputs+outputs)|join(
         {%- for prior, tr, _ in transitions if tr == fall_tr %}
         {%- set prior_ind = state_inds[prior] %}
         {{ "|| (state == %d)"|format(prior_ind) }}
-        {%- endfor %}
+        {%- endfor -%}
         ;
 
     wire {{ signal }}_can_rise = 0
         {%- for prior, tr, _ in transitions if tr == rise_tr %}
         {%- set prior_ind = state_inds[prior] %}
         {{ "|| (state == %d)"|format(prior_ind) }}
-        {%- endfor %}
+        {%- endfor -%}
         ;
 
     {%- endfor %}
 
-    // Assumptions
+    // Assumptions (spec compliance):
     {% for input in inputs %}
     {{input}}_rise: assume property ( `clk_rst $rose({{input}}) |-> {{input}}_can_rise );
     {{input}}_fall: assume property ( `clk_rst $fell({{input}}) |-> {{input}}_can_fall );
     {%- endfor %}
 
-    // Assertions
+    // Assertions (spec compliance):
     {% for output in outputs %}
     {{output}}_rise: assert property ( `clk_rst $rose({{output}}) |-> {{output}}_can_rise );
     {{output}}_fall: assert property ( `clk_rst $fell({{output}}) |-> {{output}}_can_fall );
+    {%- endfor %}
+
+    // Output Persistency Properties:
+
+    {%- for instance, gate in stateful.iteritems() %}
+
+    {%- set output_pin = lib[gate["type"]]["output"] -%}
+    {%- set output_net = gate["connections"][output_pin] -%}
+    {%- set output_pre = output_net + "_precap" %}
+    {%- set initial_value = initial_state[output_net] -%}
+    {%- set fire_ind = loop.index0 + inputs|length %}
+
+    assign {{output_net}}_ena = {{output_pre}} != {{output_net}};
+
+    {{output_net}}_persistency: assert property ( `clk_rst {{output_net}}_ena |=> ({{output_net}}_ena || ~$stable({{output_net}})) );
+
     {%- endfor %}
 
 endmodule
@@ -107,9 +131,17 @@ bind circuit spec u1 (
           .reset(reset)
         , .clk(clk)
         , .fire(fire)
-        {%- for signal in inputs+outputs %}
-        , .{{signal}}({{ signal }})
+
+        {%- for input in inputs %}
+        , .{{input}}({{ input }})
         {%- endfor %}
+
+
+        {%- for _, mod in stateful.iteritems() %}
+        , .{{ get_output_net(mod) }}({{ get_output_net(mod) }})
+        , .{{ get_output_net(mod) }}_precap({{ get_output_net(mod) }}_precap)
+        {%- endfor -%}
+
     );
 
 endmodule

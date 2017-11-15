@@ -1,5 +1,5 @@
 run: prepare_output
-	@ ./main.py \
+	@ python generator.py \
 	>> output.log 2>&1
 
 prepare_output:

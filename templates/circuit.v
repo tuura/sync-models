@@ -51,19 +51,15 @@ module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
 	{{mod["type"]}} {{instance}} (
 
 		{%- for pin, net in mod["connections"].iteritems() %}
-		{%- if pin == output_pin %}
-		.{{pin}}({{output_pre}}){{ "," if not loop.last }}
-		{%- else %}
-		.{{pin}}({{net}}){{ "," if not loop.last }}
-		{%- endif %}
-
-		{%- endfor %}
+		{%- set pin_net = output_pre if pin==output_pin else net -%}
+		.{{pin}}({{pin_net}}){{ ", " if not loop.last }}
+		{%- endfor -%}
 	);
 
 	DFF {{instance}}_ff (
 		.CK(clk),
-		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.ST({{ "reset" if initial_value else "1'b0"  }}),
+		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.D({{output_pre}}),
 		.Q({{output_net}}),
 		.ENA(fire == {{fire_ind}})
@@ -77,20 +73,17 @@ module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
 
 	{%- set output_net = mod["connections"][output_pin] %}
 	{%- set fire_ind = loop.index0 + inputs|length %}
+	{%- set output_pre = output_net + "_precap" %}
 
 	{{mod["type"]}} {{instance}} (
 		.CK(clk),
 		.RS({{ "1'b0"  if initial_value else "reset" }}),
 		.ST({{ "reset" if initial_value else "1'b0"  }}),
 		.ENA(fire == {{fire_ind}}),
+		.PRECAP({{output_pre}}),
 
 		{%- for pin, net in mod["connections"].iteritems() %}
-		{%- if pin == output_pin %}
 		.{{pin}}({{net}}){{ "," if not loop.last }}
-		{%- else %}
-		.{{pin}}({{net}}){{ "," if not loop.last }}
-		{%- endif %}
-
 		{%- endfor %}
 	);
 
@@ -113,18 +106,13 @@ module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
 
 	{{mod["type"]}} {{instance}} (
 
-		{%- for pin, net in mod["connections"].iteritems() %}
-		{%- if pin == output_pin %}
-		.{{pin}}({{output_net}}){{ "," if not loop.last }}
-		{%- else %}
-		.{{pin}}({{net}}){{ "," if not loop.last }}
-		{%- endif %}
-
-		{%- endfor %}
+		{%- for pin, net in mod["connections"].iteritems() -%}
+		.{{pin}}({{net}}){{ ", " if not loop.last }}
+		{%- endfor -%}
 	);
 
-	{% endfor %}
+	{%- endfor -%}
 
-	{#-------- End of non-stateful Modules --------#}
+	{#-------- End of non-stateful Modules -------- #}
 
 endmodule

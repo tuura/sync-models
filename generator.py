@@ -39,7 +39,7 @@ def get_workcraft_state_ind(state):
 
 
 def get_state_inds(spec):
-    """Returns a map: state -> unique index."""
+    """Return a map: state -> index."""
 
     froms = [ item[0] for item in spec["transitions"]]
     tos   = [ item[2] for item in spec["transitions"]]
@@ -67,14 +67,19 @@ def generate(spec, circuit, lib, template):
     stateless = { inst: body for inst, body in circuit["modules"].iteritems()
         if body.get("short_delay") }
 
+    get_output_pin = lambda mod: lib[mod["type"]]["output"]
+
+    get_output_net = lambda mod: mod["connections"][get_output_pin(mod)]
+
     context = {
-        "lib"           : lib,
-        "spec"          : spec,
-        "bit_size"      : bit_size,
-        "stateful"      : stateful,
-        "stateless"     : stateless,
-        "state_inds"    : get_state_inds(spec),
-        "initial_state" : circuit["initial_state"]
+        "lib"            : lib,
+        "spec"           : spec,
+        "bit_size"       : bit_size,   # helper function
+        "stateful"       : stateful,   # dictionary of stateful modules
+        "stateless"      : stateless,  # dictionary of stateless modules
+        "state_inds"     : get_state_inds(spec),  # state -> index
+        "get_output_net" : get_output_net,
+        "initial_state"  : circuit["initial_state"]
     }
 
     template = Template(read_file(template))
