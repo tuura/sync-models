@@ -4,13 +4,20 @@
 {%- set outputs = spec["outputs"] %}
 {%- set ntransitions = initial_state|length %}
 
-module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
+module circuit (
+          input reset
+        , input clk
+        , input [{{bit_size(ntransitions)-1}}:0] fire
+        {{- ", det" if dbits -}}
 
-	input reset, clk;
-	input [{{bit_size(ntransitions)-1}}:0] fire;
+        {%- for input in inputs|sort %}
+        , input {{ input }} // input
+        {%- endfor %}
 
-	output {{ inputs  | join(', ') }};
-	output {{ outputs | join(', ') }};
+        {%- for input in outputs|sort %}
+        , input {{ input }} // output
+        {%- endfor %}
+    );
 
 	{%- for input in inputs %}
 
@@ -20,8 +27,8 @@ module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
 
 	DFF {{input}}_ff (
 		.CK(clk),
-		.ST({{ "reset" if initial_value else "1'b0"  }}),
-		.RS({{ "1'b0"  if initial_value else "reset" }}),
+		.ST({{ "reset" if     initial_value else "1'b0" }}),
+		.RS({{ "reset" if not initial_value else "1'b0" }}),
 		.D(~{{input}}),
 		.Q({{input}}),
 		.ENA(fire == {{loop.index0}})
@@ -58,8 +65,8 @@ module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
 
 	DFF {{instance}}_ff (
 		.CK(clk),
-		.ST({{ "reset" if initial_value else "1'b0"  }}),
-		.RS({{ "1'b0"  if initial_value else "reset" }}),
+		.ST({{ "reset" if     initial_value else "1'b0" }}),
+		.RS({{ "reset" if not initial_value else "1'b0" }}),
 		.D({{output_pre}}),
 		.Q({{output_net}}),
 		.ENA(fire == {{fire_ind}})
@@ -77,8 +84,8 @@ module circuit (reset, clk, fire, {{ (inputs+outputs)|join(', ')}});
 
 	{{mod["type"]}} {{instance}} (
 		.CK(clk),
-		.RS({{ "1'b0"  if initial_value else "reset" }}),
-		.ST({{ "reset" if initial_value else "1'b0"  }}),
+		.RS({{ "reset" if not initial_value else "1'b0" }}),
+		.ST({{ "reset" if     initial_value else "1'b0" }}),
 		.ENA(fire == {{fire_ind}}),
 		.PRECAP({{output_pre}}),
 
