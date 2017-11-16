@@ -1,4 +1,5 @@
 import re
+import json
 
 
 builtins_lib = {
@@ -96,13 +97,41 @@ def load_lib(file):
     return lib
 
 
+def write_file(file, content):
+    with open(file, "w") as fid:
+        fid.write(content)
+
+
+def export_verilog(lib, output_file):
+    """Export library as verilog file."""
+
+    def get_verilog_expr(lib_expr):
+        """Return the verilog equivalent of a lib experession, for example:
+        'y=!(A*B+C)' -> 'y=~(A&B|C)'.
+        """
+        reps  = [("!", "~"), ("*", " & "), ("+", " | "), ("=", " = "), ("CONST", "")]
+        red_fun = lambda expr, item: expr.replace(*item)
+        return reduce(red_fun, reps, lib_expr)
+
+    def get_module_verilog(mod_tup):
+        """Return verilog representation of module."""
+        name, module = mod_tup
+        port_parts   = ["output %s" % module["output"]]  + ["input %s" % input for input in module["inputs"]]
+        port_str     = ", ".join(port_parts)
+        header       = "module %s (%s);" % (name, port_str)
+        body         = "    assign %s;" % get_verilog_expr(module["definition"])
+        footer       = "endmodule"
+        return "\n".join([header, body, footer])
+
+    gates = filter(lambda item: item[1]["type"]=="GATE", lib.iteritems())
+    mod_strs = map(get_module_verilog, gates)
+    verilog_str = "\n\n".join(mod_strs)
+    write_file(output_file, verilog_str)
+
+
 def main():
-
-    file = "libraries/workcraft.lib"
-
-    lib = load_lib(file)
-
-    print lib["AND2"]
+    lib = load_lib("libraries/workcraft.lib")
+    export_verilog(lib, "gates/workcraft.v")
 
 
 if __name__ == '__main__':

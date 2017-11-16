@@ -16,7 +16,7 @@ mkdir $WORK_DIR && cd $WORK_DIR
 ifv \
 	$DESIGN_DIR/circuit.v \
 	$DESIGN_DIR/spec.v \
-	$GATE_DIR/gates.v \
+	$GATE_DIR/*.v \
 	+tcl+$PROJECT_DIR/run.tcl \
 	+top+circuit \
 	+64bit \
@@ -24,4 +24,4 @@ ifv \
 	+nocopyright \
 	# +gui
 
-Simvisdbutil -vcd $WORK_DIR/examples -output $EXAMPLE_DIR/counter.vcd -overwrite 2>&1 > /dev/null
+# Simvisdbutil -vcd $WORK_DIR/examples -output $EXAMPLE_DIR/counter.vcd -overwrite 2>&1 > /dev/null
