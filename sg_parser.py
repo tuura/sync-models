@@ -2,7 +2,7 @@
 
 def load_sg(file):
 
-    sg = { "transitions": [] }
+    sg = { "transitions": [], "inputs": [], "outputs": [] }
 
     ignored = [".state", ".end"]
 
