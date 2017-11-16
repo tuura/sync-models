@@ -14,7 +14,7 @@ def create_circuit():
     """Return a blank new circuit."""
 
     return { "name": None, "modules": {}, "initial_state": {},
-        "assignments": {} }
+        "assignments": {}, "outputs": [], "inputs": [] }
 
 
 def add_module(circuit, module_type, module_name, connections_str):
@@ -44,7 +44,7 @@ def add_module(circuit, module_type, module_name, connections_str):
         circuit["modules"][module_name] = module
 
 
-def add_state(circuit, state_str):
+def add_initial_state(circuit, state_str):
     """Add circuit initial state information."""
 
     words = re.compile("([!\w]+)").findall(state_str)
@@ -61,13 +61,13 @@ def add_state(circuit, state_str):
 def add_inputs(circuit, nets_str):
 
     nets = re.compile("(\w+)").findall(nets_str)
-    circuit["inputs"] = list(nets)
+    circuit["inputs"] += list(nets)
 
 
 def add_outputs(circuit, nets_str):
 
     nets = re.compile("(\w+)").findall(nets_str)
-    circuit["outputs"] = list(nets)
+    circuit["outputs"] += list(nets)
 
 
 def add_delay_pragma(circuit, instance):
@@ -110,20 +110,22 @@ def load_verilog(file):
     # reg_outputs : matches output statements
     # reg_delay   : matches short delay pragmas
 
-    reg_module  = r"(\w+)\s+(\w+)\s+\(([^;]+)\);"
-    reg_state   = r"\/\/ signal values at the initial state:\s*\/\/\s*(.+)$"
-    reg_inputs  = r"\s*input\s+(.+);$"
-    reg_outputs = r"\s*output\s+(.+);$"
-    reg_delay   = r"^\s*\/\/ This inverter should have a short delay\s*INV (\S*)"
-    reg_assign  = r"^\s*assign (\S+) = (\S+);$"
+    reg_module   = r"^\s*(\w+)\s+(\w+)\s+\(([^;]+)\);"
+    reg_initial1 = r"\/\/ signal values at the initial state:\s*\/\/\s*(.+)$"
+    reg_initial2 = r"\/\/ Initial state:\s*\/\/\s*(.+)$"
+    reg_inputs   = r"\s*input\s+(.+);$"
+    reg_outputs  = r"\s*output\s+(.+);$"
+    reg_delay    = r"^\s*\/\/ This inverter should have a short delay\s*INV (\S*)"
+    reg_assign   = r"^\s*assign (\S+) = (\S+);$"
 
     mini_parsers = [
-        (reg_module  , add_module),
-        (reg_state   , add_state),
-        (reg_inputs  , add_inputs),
-        (reg_outputs , add_outputs),
-        (reg_delay   , add_delay_pragma),
-        (reg_assign  , add_assign)
+        (reg_module   , add_module),
+        (reg_initial1 , add_initial_state),
+        (reg_initial2 , add_initial_state),
+        (reg_inputs   , add_inputs),
+        (reg_outputs  , add_outputs),
+        (reg_delay    , add_delay_pragma),
+        (reg_assign   , add_assign)
     ]
 
     # Parse and return result
