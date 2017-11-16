@@ -28,7 +28,7 @@ def verify():
         run("mkdir -p gates")
 
         # Copy files
-        put("gates/gates.v", "gates/gates.v")
+        put("gates/*", "gates")
         put("generated/*", "generated")
         put("ifv/go.sh", "go.sh", mirror_local_mode=True)
         put("ifv/run.tcl", "run.tcl")
