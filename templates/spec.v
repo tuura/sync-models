@@ -22,6 +22,11 @@ module spec (
         , input {{ get_output_net(mod) }} // {{"output" if get_output_net(mod) in outputs else "internal"}}
         , input {{ get_output_net(mod) }}_precap
         {%- endfor %}
+
+        {%- for output in stateless_outs %}
+        , input {{ output }} // (stateless) output
+        {%- endfor %}
+
     );
 
     {%- if dbits -%}
@@ -36,13 +41,14 @@ module spec (
 
     reg [{{bit_size(ntransitions)-1}}:0] fire_ne;  // fire, sampled on negedge
 
-    always @(negedge clk) fire_ne = fire;
+    always @(negedge clk)
+        if (reset) fire_ne = 0; else fire_ne = fire;
 
     // Note:
-    // - fire = [0, {{ntransitions}}] -> transition #fire is enabled
-    // - fire = {{ntransitions+1}} -> all transitions are disabled
+    // - fire = [0, {{ntransitions-1}}] -> transition #fire is enabled
+    // - fire = {{ntransitions}} -> all transitions are disabled
 
-    fire_in_range : assume property ( `clk_rst fire <= {{ntransitions + 1}} );
+    fire_in_range : assume property ( `clk_rst fire < {{ntransitions}} );
 
     fire_cycle_stable : assume property(`clk_rst fire == fire_ne);
 
@@ -97,32 +103,56 @@ module spec (
 
     // Assumptions (spec compliance):
     {% for input in inputs %}
-    {{input}}_rise: assume property ( `clk_rst $rose({{input}}) |-> {{input}}_can_rise );
-    {{input}}_fall: assume property ( `clk_rst $fell({{input}}) |-> {{input}}_can_fall );
+    compliance_{{input}}_rise: assume property ( `clk_rst $rose({{input}}) |-> {{input}}_can_rise );
+    compliance_{{input}}_fall: assume property ( `clk_rst $fell({{input}}) |-> {{input}}_can_fall );
     {%- endfor %}
 
     // Assertions (spec compliance):
     {% for output in outputs %}
-    {{output}}_rise: assert property ( `clk_rst $rose({{output}}) |-> {{output}}_can_rise );
-    {{output}}_fall: assert property ( `clk_rst $fell({{output}}) |-> {{output}}_can_fall );
+    compliance_{{output}}_rise: assert property ( `clk_rst $rose({{output}}) |-> {{output}}_can_rise );
+    compliance_{{output}}_fall: assert property ( `clk_rst $fell({{output}}) |-> {{output}}_can_fall );
     {%- endfor %}
 
     // Output Persistency Properties:
 
     {%- for instance, gate in stateful.iteritems() %}
 
-    {%- set output_pin = lib[gate["type"]]["output"] -%}
-    {%- set output_net = gate["connections"][output_pin] -%}
-    {%- set output_pre = output_net + "_precap" %}
-    {%- set initial_value = initial_state[output_net] -%}
-    {%- set fire_ind = loop.index0 + inputs|length %}
+    {%- set output_net = get_output_net(gate) -%}
+    {%- set pre_net = output_net + "_precap" %}
+    {%- set fire_ind   = loop.index0 + inputs|length %}
 
-    assign {{output_net}}_ena = {{output_pre}} != {{output_net}};
+    assign {{output_net}}_ena = {{pre_net}} != {{output_net}};
 
-    {{output_net}}_persistency: assert property ( `clk_rst {{output_net}}_ena |=> ({{output_net}}_ena || ~$stable({{output_net}})) );
+    persistency_{{output_net}}: assert property ( `clk_rst {{output_net}}_ena |=> ({{output_net}}_ena || ~$stable({{output_net}})) );
 
     {%- endfor %}
 
+    // Deadlock
+
+    // Deadlock freeness: on each cycle, a transition is fired.
+
+    assign input_transition_fired = (fire < {{inputs|length}});
+
+    assign stateful_transition_fired =
+        {%- for _, mod in stateful.iteritems() %}
+        {{"||" if not loop.first else "  "}} ({{ get_output_net(mod) }} ^ {{ get_output_net(mod) }}_precap)
+        {%- endfor -%}
+    ;
+
+    deadlock_free: assert property ( `clk_rst
+        input_transition_fired || stateful_transition_fired
+    );
+
+    // Transition firing assumptions (required for deadlock_free assertion): a
+    // transitions can only be fired when it's enabled (i.e. when a stateful
+    // gate can capture a new value = its input and output are different).
+
+    {% for instance, gate in stateful.iteritems() %}
+    {%- set output_net = get_output_net(gate) -%}
+    {%- set pre_net = output_net + "_precap" %}
+    {%- set fire_ind = loop.index0 + inputs|length -%}
+    firing_{{fire_ind}} : assume property ( `clk_rst (fire == {{fire_ind}}) |-> ({{output_net}} ^ {{pre_net}}) );
+    {% endfor %}
 endmodule
 
 module bind_info();
@@ -135,7 +165,6 @@ module bind_info();
         {%- for input in inputs %}
         , .{{input}}({{ input }})
         {%- endfor %}
-
 
         {%- for _, mod in stateful.iteritems() %}
         , .{{ get_output_net(mod) }}({{ get_output_net(mod) }})

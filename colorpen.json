@@ -10,5 +10,7 @@
 	"Verification mode:": "bold",
 	"Assertion Summary:": "bold",
 	" Fail": "red bold",
-	" Pass": "green bold"
+	" Pass": "green bold",
+	"\\b\\w+.compliance_\\w+": "magenta",
+	"\\b\\w+.persistency_\\w+": "cyan"
 }

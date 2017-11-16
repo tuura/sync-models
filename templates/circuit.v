@@ -11,11 +11,11 @@ module circuit (
         {{- ", det" if dbits -}}
 
         {%- for input in inputs|sort %}
-        , input {{ input }} // input
+        , output {{ input }} // input
         {%- endfor %}
 
         {%- for input in outputs|sort %}
-        , input {{ input }} // output
+        , output {{ input }} // output
         {%- endfor %}
     );
 

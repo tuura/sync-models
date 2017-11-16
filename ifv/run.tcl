@@ -1,4 +1,4 @@
-clear
+# clear
 
 # Initialization
 
@@ -12,7 +12,7 @@ run 4
 
 init -load -current
 
-init -show
+# init -show
 
 constraint -add -pin reset 0 -reset
 
@@ -23,6 +23,6 @@ define delay_assertion 2
 
 prove
 
-witness circuit.u1.gn_rise -sstexport examples -overwrite
+# debug circuit.u1.deadlock_free -sstexport examples -overwrite
 
 exit

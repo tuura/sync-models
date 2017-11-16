@@ -35,7 +35,7 @@ def unzip(zipped):
     return zip(*zipped)
 
 
-def verify_circuit(lib, circuit, sg):
+def verify_circuit(lib, circuit, sg, quiet=False):
     """Check if circuit satisfies the spec sg."""
 
     # Add circuit state connections
@@ -122,7 +122,8 @@ def verify_circuit(lib, circuit, sg):
 
             label = st_labels[state]
 
-            print_underlined("visiting state %s (%s):" % (show_state(state), label))
+            if not quiet:
+                print_underlined("visiting state %s (%s):" % (show_state(state), label))
 
             visited.add(state)
 
@@ -152,22 +153,22 @@ def verify_circuit(lib, circuit, sg):
             # Enumerate output transitions that are not in specs
             invalid_output_trs = circuit_out_trs - spec_trs
 
-            print "Transitions (Internal) : %s" % list(circuit_trs & all_int_trs)
-            print "Transitions (Input)    : %s" % list(spec_inp_trs)
-            print "Transitions (Output)   : %s" % list(circuit_out_trs)
-            print ""
+            if not quiet:
+                print "Transitions (Internal) : %s" % list(circuit_trs & all_int_trs)
+                print "Transitions (Input)    : %s" % list(spec_inp_trs)
+                print "Transitions (Output)   : %s" % list(circuit_out_trs)
+                print ""
 
             if not (circuit_trs or spec_inp_trs):
                 return (False, "Deadlock in state %s (%s)" % (show_state(state), label))
 
             if invalid_output_trs:
 
-                print "Signal values:\n"
-
-                for signal, value in zip(encoding, state):
-                    print "%10s = %s" % (signal, value)
-
-                print ""
+                if not quiet:
+                    print "Signal values:\n"
+                    for signal, value in zip(encoding, state):
+                        print "%10s = %s" % (signal, value)
+                    print ""
 
                 return (False, "Found non-compliant circuit output transition(s): %s" %
                     list(invalid_output_trs))
@@ -184,9 +185,11 @@ def verify_circuit(lib, circuit, sg):
                 next_label = sg_next_states.get((label, tr), label)  # label of next state
                 st_labels[next_state] = next_label
                 next_to_visit.add(next_state)
-                print "Discovered state: %s" % show_state(next_state)
+                if not quiet:
+                    print "Discovered state: %s" % show_state(next_state)
 
-            print ""
+            if not quiet:
+                print ""
 
         to_visit = next_to_visit - visited
 
@@ -212,17 +215,12 @@ def main():
 
     # Load library, circuit and spec
 
-    extra_lib = load_lib("libraries/extra.lib")
-    workcraft_lib = load_lib("libraries/workcraft.lib")
-    lib = merge_libs(workcraft_lib, builtins_lib, extra_lib)
+    spec    = load_sg("examples/concurrency/spec_n6.sg")
+    circuit = load_verilog("examples/concurrency/circuit_n6_petrify.v")
+    lib_wk  = load_lib("libraries/workcraft.lib")
+    lib     = merge_libs(lib_wk, builtins_lib)
 
-    circuit = load_verilog("examples/SRAM-master/circuit.v")
-
-    spec = load_sg("examples/SRAM-master/spec.sg")
-
-    # Merge libs
-
-    result, msg = verify_circuit(lib, circuit, spec)
+    result, msg = verify_circuit(lib, circuit, spec, quiet=True)
 
     print("Result: " + ("PASS" if result else "FAIL"))
 

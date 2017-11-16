@@ -68,8 +68,9 @@ def generate(spec, circuit, lib, template):
         if body.get("short_delay") }
 
     get_output_pin = lambda mod: lib[mod["type"]]["output"]
-
     get_output_net = lambda mod: mod["connections"][get_output_pin(mod)]
+    stateless_nets = map(get_output_net, stateless.values())
+    stateless_outs = set(circuit["outputs"]) & set(stateless_nets)
 
     context = {
         "lib"            : lib,
@@ -78,8 +79,9 @@ def generate(spec, circuit, lib, template):
         "stateful"       : stateful,   # dictionary of stateful modules
         "stateless"      : stateless,  # dictionary of stateless modules
         "state_inds"     : get_state_inds(spec),  # state -> index
+        "initial_state"  : circuit["initial_state"],
         "get_output_net" : get_output_net,
-        "initial_state"  : circuit["initial_state"]
+        "stateless_outs" : stateless_outs
     }
 
     template = Template(read_file(template))
