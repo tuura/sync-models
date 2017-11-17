@@ -11,7 +11,7 @@ module circuit (
         {{- ", det" if dbits -}}
 
         {%- for input in inputs|sort %}
-        , output {{ input }} // input
+        , input {{ input }}_precap // input
         {%- endfor %}
 
         {%- for input in outputs|sort %}
@@ -29,7 +29,7 @@ module circuit (
 		.CK(clk),
 		.ST({{ "reset" if     initial_value else "1'b0" }}),
 		.RS({{ "reset" if not initial_value else "1'b0" }}),
-		.D(~{{input}}),
+		.D({{input}}_precap),
 		.Q({{input}}),
 		.ENA(fire == {{loop.index0}})
 	);
@@ -86,12 +86,12 @@ module circuit (
 		.CK(clk),
 		.RS({{ "reset" if not initial_value else "1'b0" }}),
 		.ST({{ "reset" if     initial_value else "1'b0" }}),
-		.ENA(fire == {{fire_ind}}),
 		.PRECAP({{output_pre}}),
 
 		{%- for pin, net in mod["connections"].iteritems() %}
-		.{{pin}}({{net}}){{ "," if not loop.last }}
+		.{{pin}}({{net}}),
 		{%- endfor %}
+		.ENA(fire == {{fire_ind}})
 	);
 
 	{#-------- End of Latch --------#}

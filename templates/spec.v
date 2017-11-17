@@ -16,6 +16,7 @@ module spec (
 
         {% for input in inputs %}
         , input {{ input }} // input
+        , input {{ input }}_precap
         {%- endfor %}
 
         {%- for _, mod in stateful.iteritems() %}
@@ -147,6 +148,12 @@ module spec (
     // transitions can only be fired when it's enabled (i.e. when a stateful
     // gate can capture a new value = its input and output are different).
 
+    {% for input in inputs %}
+    {%- set pre_net = input + "_precap" %}
+    {%- set fire_ind = loop.index0 -%}
+    firing_{{fire_ind}} : assume property ( `clk_rst (fire == {{fire_ind}}) |-> ({{input}} ^ {{pre_net}}) );
+    {% endfor -%}
+
     {% for instance, gate in stateful.iteritems() %}
     {%- set output_net = get_output_net(gate) -%}
     {%- set pre_net = output_net + "_precap" %}
@@ -164,6 +171,7 @@ module bind_info();
 
         {%- for input in inputs %}
         , .{{input}}({{ input }})
+        , .{{input}}_precap({{ input }}_precap)
         {%- endfor %}
 
         {%- for _, mod in stateful.iteritems() %}
