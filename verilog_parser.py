@@ -81,11 +81,12 @@ def add_assign(circuit, out, inp):
     # prefixed with * to make them non-compliant with the Verilog standard (and
     # thus obviously in need of special treatment).
 
-    instance = "*%s" % out
+    instance = "ASSIGN_%s" % out
 
     circuit["modules"][instance] = {
-        "type": "*assign",
-        "connections": { "inp": inp, "out": out }
+        "type": "BUF_BUILTIN",
+        "connections": { "inp": inp, "out": out },
+        "virtual": True
     }
 
 

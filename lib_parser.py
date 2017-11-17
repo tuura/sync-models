@@ -3,10 +3,9 @@ import json
 
 
 builtins_lib = {
-    "*assign": {
+    "BUF_BUILTIN": {
         "type": "GATE",
         "state_input": None,
-        "name": "*assign",
         "output": "out",
         "inputs": ["inp"],
         "definition": "out=inp",

@@ -3,9 +3,10 @@
 from jinja2 import Template
 from sg_parser import load_sg
 from lib_parser import load_lib
+from lib_parser import merge_libs
+from lib_parser import builtins_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
-from lib_parser import merge_libs
 
 import os
 import re
@@ -93,7 +94,8 @@ def main():
 
     output_dir = "generated"
 
-    lib     = load_lib("libraries/workcraft.lib")
+    lib_wk  = load_lib("libraries/workcraft.lib")
+    lib     = merge_libs(lib_wk, builtins_lib)
     spec    = load_sg("examples/SRAM-master/spec.sg")
     circuit = load_verilog("examples/SRAM-master/circuit.v")
 

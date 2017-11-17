@@ -61,7 +61,7 @@ module circuit (
 		{%- set pin_net = output_pre if pin==output_pin else net -%}
 		.{{pin}}({{pin_net}}){{ ", " if not loop.last }}
 		{%- endfor -%}
-	);
+	); {{"// virtual module" if mod.get("virtual")}}
 
 	DFF {{instance}}_ff (
 		.CK(clk),
