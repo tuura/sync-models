@@ -89,6 +89,7 @@ def generate(spec, circuit, lib, template):
 
     get_output_pin   = lambda mod: lib[mod["type"]]["output"]
     get_output_net   = lambda mod: mod["connections"][get_output_pin(mod)]
+    stateful_nets    = map(get_output_net, stateful.values())
     stateless_nets   = map(get_output_net, stateless.values())
     stateless_outs   = set(circuit["outputs"]) & set(stateless_nets)
     ndinds, ndcounts = get_nond_groups(spec["transitions"])
@@ -98,7 +99,6 @@ def generate(spec, circuit, lib, template):
         "lib"            : lib,
         "spec"           : spec,
         "bit_size"       : bit_size,   # helper function
-        "stateful"       : stateful,   # dictionary of stateful modules
         "stateless"      : stateless,  # dictionary of stateless modules
         "state_inds"     : get_state_inds(spec),  # state -> index
         "initial_state"  : circuit["initial_state"],
@@ -106,6 +106,7 @@ def generate(spec, circuit, lib, template):
         "ndinds"         : ndinds,
         "ndcounts"       : ndcounts,
         "ndbits"         : ndbits,
+        "stateful_nets"  : stateful_nets,
         "stateless_outs" : stateless_outs
     }
 

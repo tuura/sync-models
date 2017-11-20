@@ -4,7 +4,7 @@
 {%- set outputs = spec["outputs"]|sort %}
 {%- set initial = spec["initial_state"] %}
 {%- set transitions = spec["transitions"]|sort %}
-{%- set ntransitions = (inputs+stateful.values())|length %}
+{%- set ntransitions = (inputs+stateful_net)|length %}
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
@@ -18,9 +18,9 @@ module spec (
         , input {{ input }}_precap
         {%- endfor %}
 
-        {%- for gate in stateful.values() %}
-        , input {{ get_output_net(gate) }} // {{"output" if get_output_net(gate) in outputs else "internal"}}
-        , input {{ get_output_net(gate) }}_precap
+        {%- for net in stateful_nets %}
+        , input net
+        , input net_precap
         {%- endfor %}
 
         {%- for output in stateless_outs %}
@@ -120,15 +120,13 @@ module spec (
     {% for input in inputs %}
     assign {{input}}_ena = {{input}}_can_rise | {{input}}_can_fall;
     {%- endfor -%}
-    {%- for gate in stateful.values() %}
-    {%- set output_net = get_output_net(gate) %}
-    assign {{output_net}}_ena = {{output_net}}_precap ^ {{output_net}};
+    {%- for net in stateful_nets %}
+    assign {{net}}_ena = {{net}}_precap ^ {{net}};
     {%- endfor %}
 
     // Output Persistency Properties:
-    {% for gate in stateful.values() -%}
-    {%- set output_net = get_output_net(gate) %}
-    persistency_{{output_net}}: assert property ( `clk_rst {{output_net}}_ena |=> ({{output_net}}_ena || ~$stable({{output_net}})) );
+    {% for gate in stateful_nets -%}
+    persistency_{{net}}: assert property ( `clk_rst {{net}}_ena |=> ({{net}}_ena || ~$stable({{output_net}})) );
     {%- endfor %}
 
     // Deadlock
@@ -140,8 +138,8 @@ module spec (
         {%- for input in inputs %}
         | {{input}}_ena
         {%- endfor -%}
-        {%- for gate in stateful.values() %}
-        | {{ get_output_net(gate) }}_ena
+        {%- for gate in stateful_nets %}
+        | {{net}}_ena
         {%- endfor -%}
     ;
 
@@ -162,14 +160,12 @@ module spec (
     {% for input in inputs %}
     {%- set pre_net = input + "_precap" %}
     {%- set fire_ind = loop.index0 -%}
-    firing_{{fire_ind}} : assume property ( `clk_rst (fire == {{fire_ind}}) |-> ({{input}} ^ {{pre_net}}) );
+    firing_{{fire_ind}}: assume property ( `clk_rst (fire == {{fire_ind}}) |-> ({{input}} ^ {{pre_net}}) );
     {% endfor -%}
 
-    {% for gate in stateful.values() %}
-    {%- set output_net = get_output_net(gate) -%}
-    {%- set pre_net = output_net + "_precap" %}
+    {% for net in stateful_nets %}
     {%- set fire_ind = loop.index0 + inputs|length -%}
-    firing_{{fire_ind}} : assume property ( `clk_rst (fire == {{fire_ind}}) |-> ({{output_net}} ^ {{pre_net}}) );
+    firing_{{fire_ind}}: assume property ( `clk_rst (fire == {{fire_ind}}) |-> ({{net}} ^ {{net}}_precap) );
     {% endfor %}
 endmodule
 
@@ -185,9 +181,9 @@ module bind_info();
         , .{{input}}_precap({{ input }}_precap)
         {%- endfor %}
 
-        {%- for gate in stateful.values() %}
-        , .{{ get_output_net(gate) }}({{ get_output_net(gate) }})
-        , .{{ get_output_net(gate) }}_precap({{ get_output_net(gate) }}_precap)
+        {%- for net in stateful_nets() %}
+        , .{{net}}({{net}})
+        , .{{net}}_precap({{net}}_precap)
         {%- endfor -%}
 
     );
