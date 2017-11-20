@@ -1,15 +1,11 @@
 // vi: set ft=verilog :
 
-{%- set inputs = spec["inputs"]|sort %}
-{%- set outputs = spec["outputs"]|sort %}
-{%- set ntransitions = initial_state|length %}
-
 module circuit (
           input reset
         , input clk
         {{- ", det" if dbits -}}
 
-        {%- for input in inputs|sort %}
+        {%- for input in inputs %}
         , input {{ input }}_precap // input
         {%- endfor %}
 
@@ -18,11 +14,11 @@ module circuit (
         {%- endfor %}
     );
 
-	reg [{{bit_size(ntransitions)-1}}:0] fire; // unbound register
+	reg [{{firebits-1}}:0] fire; // unbound register
 
 	{%- for input in inputs %}
 
-	{% set initial_value = initial_state[input] -%}
+	{% set initial_value = initial_circuit[input] -%}
 
 	// input signal '{{input}}' (initial value = {{initial_value}})
 
@@ -41,20 +37,18 @@ module circuit (
 
 	{% for instance, mod in stateful.iteritems() %}
 
-	{%- set output_pin = lib[mod["type"]]["output"] -%}
-	{%- set output_net = mod["connections"][output_pin] -%}
+	{%- set output_pin = get_output_pin(mod) -%}
+	{%- set output_net = get_output_net(mod) -%}
+	{%- set output_pre = output_net + "_precap" %}
 	{%- set category = "output" if output_net in outputs else "internal" -%}
-	{% set initial_value = initial_state[output_net] %}
+	{% set initial_value = initial_circuit[output_net] -%}
+	{% set fire_ind = firing_indices[output_net] %}
 
 	// {{category}} signal '{{output_net}}' (initial value = {{initial_value}})
 
 	{%- if lib[mod["type"]]["type"] == "GATE" %}
 
-	{#-------- Gate --------#}
-
-	{%- set output_net = mod["connections"][output_pin] %}
-	{%- set output_pre = output_net + "_precap" %}
-	{%- set fire_ind = loop.index0 + inputs|length %}
+	{#-------- Gate -------- #}
 
 	{{mod["type"]}} {{instance}} (
 
@@ -77,11 +71,7 @@ module circuit (
 
 	{%- else %}
 
-	{#-------- Latch --------#}
-
-	{%- set output_net = mod["connections"][output_pin] %}
-	{%- set fire_ind = loop.index0 + inputs|length %}
-	{%- set output_pre = output_net + "_precap" %}
+	{#-------- Latch -------- #}
 
 	{{mod["type"]}} {{instance}} (
 		.CK(clk),
@@ -109,8 +99,7 @@ module circuit (
 
 	{% for instance, mod in stateless.iteritems() %}
 
-	{% set output_pin = lib[mod["type"]]["output"] -%}
-	{%- set output_net = mod["connections"][output_pin] -%}
+	{%- set output_net = get_output_net(mod) -%}
 
 	{{mod["type"]}} {{instance}} (
 

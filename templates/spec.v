@@ -1,32 +1,25 @@
 // vi: set ft=verilog :
 
-{%- set inputs = spec["inputs"]|sort %}
-{%- set outputs = spec["outputs"]|sort %}
-{%- set initial = spec["initial_state"] %}
-{%- set transitions = spec["transitions"]|sort %}
-{%- set ntransitions = (inputs+stateful_nets)|length %}
+{%- set ntransitions = nets|length %}
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
 module spec (
           input reset
         , input clk
-        , input [{{bit_size(ntransitions)-1}}:0] fire
+        , input [{{firebits-1}}:0] fire
 
-        {%- for input in inputs %}
-        , input {{ input }} // input
-        , input {{ input }}_precap
+        {%- for net in nets %}
+        , input {{net}}
         {%- endfor %}
 
-        {%- for net in stateful_nets %}
-        , input {{net}}
+        {%- for net in nets %}
         , input {{net}}_precap
         {%- endfor %}
 
         {%- for output in stateless_outs %}
         , input {{ output }} // (stateless) output
         {%- endfor %}
-
     );
 
     {%- if ndbits %}
@@ -36,7 +29,7 @@ module spec (
 
     // fire signal constraints
 
-    reg [{{bit_size(ntransitions)-1}}:0] fire_ne;  // fire, sampled on negedge
+    reg [{{firebits-1}}:0] fire_ne;  // fire, sampled on negedge
 
     always @(negedge clk)
         if (reset) fire_ne = 0; else fire_ne = fire;
@@ -49,7 +42,7 @@ module spec (
 
     fire_cycle_stable : assume property(`clk_rst fire == fire_ne);
 
-    // model (derived from sg)
+    // spec model
 
     integer state;
 
@@ -57,9 +50,9 @@ module spec (
 
         if (reset) begin
 
-            {%- set initial_ind = state_inds[initial] %}
+            {%- set initial_ind = state_inds[initial_spec] %}
 
-            state <= {{ initial_ind }}; // {{ initial }}
+            state <= {{ initial_ind }}; // {{ initial_spec }}
 
         end else begin
             {% for from, tr, to in transitions -%}
@@ -173,16 +166,13 @@ module bind_info();
         , .clk(clk)
         , .fire(fire)
 
-        {%- for input in inputs %}
-        , .{{input}}({{ input }})
-        , .{{input}}_precap({{ input }}_precap)
-        {%- endfor %}
-
-        {%- for net in stateful_nets %}
+        {%- for net in nets %}
         , .{{net}}({{net}})
-        , .{{net}}_precap({{net}}_precap)
         {%- endfor -%}
 
+        {%- for net in nets %}
+        , .{{net}}_precap({{net}}_precap)
+        {%- endfor -%}
     );
 
 endmodule

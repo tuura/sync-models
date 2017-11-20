@@ -89,20 +89,33 @@ def generate(spec, circuit, lib, template):
 
     get_output_pin   = lambda mod: lib[mod["type"]]["output"]
     get_output_net   = lambda mod: mod["connections"][get_output_pin(mod)]
-    stateful_nets    = map(get_output_net, stateful.values())
-    stateless_nets   = map(get_output_net, stateless.values())
+
+    stateful_nets    = sorted(map(get_output_net, stateful.values()))
+    stateless_nets   = sorted(map(get_output_net, stateless.values()))
     stateless_outs   = set(circuit["outputs"]) & set(stateless_nets)
     ndinds, ndcounts = get_nond_groups(spec["transitions"])
     ndbits           = bit_size(max(ndcounts.values()))
+    inputs           = sorted(spec["inputs"])
+    outputs          = sorted(spec["outputs"])
+    nets             = inputs + stateful_nets
+    firebits         = bit_size(len(nets))
+    transitions      = sorted(spec["transitions"])
+    firing_indices   = { net: nets.index(net) for net in nets }
 
     context = {
         "lib"            : lib,
-        "spec"           : spec,
-        "bit_size"       : bit_size,   # helper function
+        "inputs"         : inputs,
+        "outputs"        : outputs,
+        "get_output_net" : get_output_net,
+        "get_output_pin" : get_output_pin,
+        "firing_indices" : firing_indices,
+        "nets"           : nets,
+        "transitions"    : transitions,
+        "firebits"       : firebits,
+        "initial_spec"   : spec["initial_state"],  # string
         "stateless"      : stateless,  # dictionary of stateless modules
         "state_inds"     : get_state_inds(spec),  # state -> index
-        "initial_state"  : circuit["initial_state"],
-        "get_output_net" : get_output_net,
+        "initial_circuit": circuit["initial_state"],  # dict: signal -> state
         "ndinds"         : ndinds,
         "ndcounts"       : ndcounts,
         "ndbits"         : ndbits,
