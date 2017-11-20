@@ -23,6 +23,6 @@ define delay_assertion 2
 
 prove
 
-# debug circuit.u1.deadlock_free -sstexport examples -overwrite
+debug circuit.u1.deadlock_free -sstexport examples -overwrite
 
 exit

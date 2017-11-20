@@ -60,6 +60,25 @@ def bit_size(n):
     return int(math.ceil(bits))
 
 
+def get_nond_groups(transitions):
+    """Return two dicts, inds and counts, representing non-deterministic
+    transitions choices.
+
+    'counts' is (before, tr) -> count of (before, tr) in transitions
+    'inds' is the index of (before, tr, after) within its group of (before, tr)
+    """
+
+    counts = defaultdict(lambda: 0)
+    inds = dict()
+
+    for before, tr, after in transitions:
+        ckey = (before, tr)
+        counts[ckey] += 1
+        inds[(before, tr, after)] = counts[ckey]
+
+    return inds, counts
+
+
 def generate(spec, circuit, lib, template):
 
     stateful = { inst: body for inst, body in circuit["modules"].iteritems()
@@ -68,10 +87,12 @@ def generate(spec, circuit, lib, template):
     stateless = { inst: body for inst, body in circuit["modules"].iteritems()
         if body.get("short_delay") }
 
-    get_output_pin = lambda mod: lib[mod["type"]]["output"]
-    get_output_net = lambda mod: mod["connections"][get_output_pin(mod)]
-    stateless_nets = map(get_output_net, stateless.values())
-    stateless_outs = set(circuit["outputs"]) & set(stateless_nets)
+    get_output_pin   = lambda mod: lib[mod["type"]]["output"]
+    get_output_net   = lambda mod: mod["connections"][get_output_pin(mod)]
+    stateless_nets   = map(get_output_net, stateless.values())
+    stateless_outs   = set(circuit["outputs"]) & set(stateless_nets)
+    ndinds, ndcounts = get_nond_groups(spec["transitions"])
+    ndbits           = bit_size(max(ndcounts.values()))
 
     context = {
         "lib"            : lib,
@@ -82,6 +103,9 @@ def generate(spec, circuit, lib, template):
         "state_inds"     : get_state_inds(spec),  # state -> index
         "initial_state"  : circuit["initial_state"],
         "get_output_net" : get_output_net,
+        "ndinds"         : ndinds,
+        "ndcounts"       : ndcounts,
+        "ndbits"         : ndbits,
         "stateless_outs" : stateless_outs
     }
 
@@ -96,8 +120,8 @@ def main():
 
     lib_wk  = load_lib("libraries/workcraft.lib")
     lib     = merge_libs(lib_wk, builtins_lib)
-    spec    = load_sg("examples/SRAM-master/spec.sg")
-    circuit = load_verilog("examples/SRAM-master/circuit.v")
+    spec    = load_sg("examples/flat-arbiter/spec.sg")
+    circuit = load_verilog("examples/flat-arbiter/circuit.v")
 
     spec_str    = generate(spec, circuit, lib, "templates/spec.v")
     circuit_str = generate(spec, circuit, lib, "templates/circuit.v")

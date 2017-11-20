@@ -215,8 +215,8 @@ def main():
 
     # Load library, circuit and spec
 
-    spec    = load_sg("examples/concurrency/spec_n6.sg")
-    circuit = load_verilog("examples/concurrency/circuit_n6_petrify.v")
+    spec    = load_sg("examples/flat-arbiter/spec.sg")
+    circuit = load_verilog("examples/flat-arbiter/circuit.v")
     lib_wk  = load_lib("libraries/workcraft.lib")
     lib     = merge_libs(lib_wk, builtins_lib)
 

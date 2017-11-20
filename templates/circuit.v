@@ -1,13 +1,12 @@
 // vi: set ft=verilog :
 
-{%- set inputs = spec["inputs"] %}
-{%- set outputs = spec["outputs"] %}
+{%- set inputs = spec["inputs"]|sort %}
+{%- set outputs = spec["outputs"]|sort %}
 {%- set ntransitions = initial_state|length %}
 
 module circuit (
           input reset
         , input clk
-        , input [{{bit_size(ntransitions)-1}}:0] fire
         {{- ", det" if dbits -}}
 
         {%- for input in inputs|sort %}
@@ -18,6 +17,8 @@ module circuit (
         , output {{ input }} // output
         {%- endfor %}
     );
+
+	reg [{{bit_size(ntransitions)-1}}:0] fire; // unbound register
 
 	{%- for input in inputs %}
 
