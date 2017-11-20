@@ -10,7 +10,16 @@ builtins_lib = {
         "inputs": ["inp"],
         "definition": "out=inp",
         "lambda": (lambda inp: inp)
-    }
+    },
+    "AND2B": {
+        "type": "GATE",
+        "state_input": None,
+        "output": "O",
+        "inputs": ["AN", "B"],
+        "definition": "O=!AN*B",
+        "lambda": (lambda AN, B: (not AN) and B)
+    },
+
 }
 
 

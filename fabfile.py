@@ -4,17 +4,23 @@ from fabric.api import run
 from fabric.api import sudo
 from fabric.api import cd
 from fabric.api import env
+from fabric.state import output
 from fabric.operations import put
+from fabric.operations import get
 
 
-env.host_string    = "eeehandel"
-env.use_ssh_config = True
-env.output_prefix  = False
-workspace_dir      = "workspaces"
 project_name       = "sync-models"
+workspace_dir      = "workspaces"
+env.host_string    = "eeehandel"
+output["status"]   = False
+output["running"]  = False
+env.output_prefix  = False
+env.use_ssh_config = True
 
 
 def verify():
+
+    clean()
 
     run_name = "".join(sample(lowercase, 6))
     work_dir = "%s/%s/%s" % (workspace_dir, project_name, run_name)
@@ -35,6 +41,8 @@ def verify():
 
         # Run ifv
         run("module load cadence-license && ./go.sh")
+
+        get("examples/counter.vcd", "counter.vcd")
 
 
 def clean():

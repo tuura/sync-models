@@ -22,6 +22,7 @@ ifv \
 	+64bit \
 	+bind_top+bind_info \
 	+nocopyright \
+	-q \
 	# +gui
 
-# Simvisdbutil -vcd $WORK_DIR/examples -output $EXAMPLE_DIR/counter.vcd -overwrite 2>&1 > /dev/null
+simvisdbutil -vcd $WORK_DIR/examples -output $EXAMPLE_DIR/counter.vcd -overwrite >/dev/null 2>&1
