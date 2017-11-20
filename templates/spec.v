@@ -4,7 +4,7 @@
 {%- set outputs = spec["outputs"]|sort %}
 {%- set initial = spec["initial_state"] %}
 {%- set transitions = spec["transitions"]|sort %}
-{%- set ntransitions = (inputs+stateful_net)|length %}
+{%- set ntransitions = (inputs+stateful_nets)|length %}
 
 `define clk_rst @(posedge clk) disable iff (reset)
 
@@ -19,8 +19,8 @@ module spec (
         {%- endfor %}
 
         {%- for net in stateful_nets %}
-        , input net
-        , input net_precap
+        , input {{net}}
+        , input {{net}}_precap
         {%- endfor %}
 
         {%- for output in stateless_outs %}
@@ -43,7 +43,7 @@ module spec (
 
     // Note:
     // - fire = [0, {{ntransitions-1}}] -> transition #fire is enabled
-    // - fire = {{ntransitions}} -> all transitions are disabled
+    // - fire = {{ntransitions}} -> no transitions enabled
 
     fire_in_range : assume property ( `clk_rst fire <= {{ntransitions}} );
 
@@ -63,12 +63,12 @@ module spec (
 
         end else begin
             {% for from, tr, to in transitions -%}
-            {%- set signal = tr[:-1] -%}
-            {%- set sign = tr[-1] -%}
-            {%- set from_ind = state_inds[from] -%}
-            {%- set to_ind = state_inds[to] -%}
+            {%- set signal     = tr[:-1]          -%}
+            {%- set sign       = tr[-1]           -%}
+            {%- set from_ind   = state_inds[from] -%}
+            {%- set to_ind     = state_inds[to]   -%}
             {%- set verilog_tr = ("~" + signal) if sign == "-" else signal %}
-            if (state == {{ from_ind }} && {{ verilog_tr }} ) state <= {{ to_ind }};  // {{ to }}
+            if (state == {{ from_ind }} && {{ verilog_tr }}) state <= {{ to_ind }};  // {{ to }}
             {%- endfor %}
 
         end
@@ -79,18 +79,15 @@ module spec (
 
     {%- for signal in inputs + outputs %}
 
-    {%- set rise_tr = signal + "+" %}
-    {%- set fall_tr = signal + "-" %}
-
     wire {{ signal }}_can_fall = 0
-        {%- for prior, tr, _ in transitions if tr == fall_tr %}
+        {%- for prior, tr, _ in transitions if tr == signal + "-" %}
         {%- set prior_ind = state_inds[prior] %}
         {{ "|| (state == %d)"|format(prior_ind) }}
         {%- endfor -%}
         ;
 
     wire {{ signal }}_can_rise = 0
-        {%- for prior, tr, _ in transitions if tr == rise_tr %}
+        {%- for prior, tr, _ in transitions if tr == signal + "+" %}
         {%- set prior_ind = state_inds[prior] %}
         {{ "|| (state == %d)"|format(prior_ind) }}
         {%- endfor -%}
@@ -125,8 +122,8 @@ module spec (
     {%- endfor %}
 
     // Output Persistency Properties:
-    {% for gate in stateful_nets -%}
-    persistency_{{net}}: assert property ( `clk_rst {{net}}_ena |=> ({{net}}_ena || ~$stable({{output_net}})) );
+    {% for net in stateful_nets %}
+    persistency_{{net}}: assert property ( `clk_rst {{net}}_ena |=> ({{net}}_ena || ~$stable({{net}})) );
     {%- endfor %}
 
     // Deadlock
@@ -138,7 +135,7 @@ module spec (
         {%- for input in inputs %}
         | {{input}}_ena
         {%- endfor -%}
-        {%- for gate in stateful_nets %}
+        {%- for net in stateful_nets %}
         | {{net}}_ena
         {%- endfor -%}
     ;
@@ -181,7 +178,7 @@ module bind_info();
         , .{{input}}_precap({{ input }}_precap)
         {%- endfor %}
 
-        {%- for net in stateful_nets() %}
+        {%- for net in stateful_nets %}
         , .{{net}}({{net}})
         , .{{net}}_precap({{net}}_precap)
         {%- endfor -%}

@@ -106,6 +106,7 @@ def generate(spec, circuit, lib, template):
         "ndinds"         : ndinds,
         "ndcounts"       : ndcounts,
         "ndbits"         : ndbits,
+        "stateful"       : stateful,
         "stateful_nets"  : stateful_nets,
         "stateless_outs" : stateless_outs
     }
