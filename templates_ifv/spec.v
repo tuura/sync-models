@@ -5,20 +5,20 @@
 `define clk_rst @(posedge clk) disable iff (reset)
 
 module spec (
-          input reset
-        , input clk
-        , input [{{firebits-1}}:0] fire
+        input reset,
+        input clk,
+        input [{{firebits-1}}:0] fire,
 
         {%- for net in nets %}
-        , input {{net}}
+        input {{net}},
         {%- endfor %}
 
         {%- for net in nets %}
-        , input {{net}}_precap
+        input {{net}}_precap {{- "," if not loop.last or stateless_outs}}
         {%- endfor %}
 
         {%- for output in stateless_outs %}
-        , input {{ output }} // (stateless) output
+        input {{ output }} {{- "," if not loop.last}} // (stateless) output
         {%- endfor %}
     );
 
@@ -60,8 +60,9 @@ module spec (
             {%- set sign       = tr[-1]           -%}
             {%- set from_ind   = state_inds[from] -%}
             {%- set to_ind     = state_inds[to]   -%}
+            {%- set fire_ind = firing_indices[signal] -%}
             {%- set verilog_tr = ("~" + signal) if sign == "-" else signal %}
-            if (state == {{ from_ind }} && {{ verilog_tr }}) state <= {{ to_ind }};  // {{ to }}
+            if (state == {{ from_ind }} && {{ verilog_tr }}_precap && fire == {{fire_ind}}) state <= {{ to_ind }};  // {{ to }}
             {%- endfor %}
 
         end
@@ -90,14 +91,14 @@ module spec (
 
     // Assumptions (spec compliance):
     {% for input in inputs %}
-    compliance_{{input}}_rise: assume property ( `clk_rst $rose({{input}}) |-> {{input}}_can_rise );
-    compliance_{{input}}_fall: assume property ( `clk_rst $fell({{input}}) |-> {{input}}_can_fall );
+    compliance_{{input}}_rise: assume property ( `clk_rst $rose({{input}}) |-> $past({{input}}_can_rise) );
+    compliance_{{input}}_fall: assume property ( `clk_rst $fell({{input}}) |-> $past({{input}}_can_fall) );
     {%- endfor %}
 
     // Assertions (spec compliance):
     {% for output in outputs %}
-    compliance_{{output}}_rise: assert property ( `clk_rst $rose({{output}}) |-> {{output}}_can_rise );
-    compliance_{{output}}_fall: assert property ( `clk_rst $fell({{output}}) |-> {{output}}_can_fall );
+    compliance_{{output}}_rise: assert property ( `clk_rst $rose({{output}}) |-> $past({{output}}_can_rise) );
+    compliance_{{output}}_fall: assert property ( `clk_rst $fell({{output}}) |-> $past({{output}}_can_fall) );
     {%- endfor %}
 
     // Enable signals:
@@ -116,13 +117,13 @@ module spec (
 
     // Output Persistency Properties:
     {% for net in stateful_nets %}
-    persistency_{{net}}: assert property ( `clk_rst {{net}}_ena |=> ({{net}}_ena || ~$stable({{net}})) );
+    // persistency_{{net}}: assert property ( `clk_rst {{net}}_ena |=> ({{net}}_ena || ~$stable({{net}})) );
+    persistency_{{net}}: assert property ( `clk_rst $fell({{net}}_ena) |-> ~$stable({{net}}) );
     {%- endfor %}
 
     // Deadlock
 
-    // Deadlock freeness: on each cycle, at least one internal transition is
-    // enabled or an input can change.
+    // Deadlock freeness: on each cycle, at least one transition is enabled.
 
     assign exist_enabled_transition =
         {%- for input in inputs %}
@@ -140,7 +141,7 @@ module spec (
     // );
 
     deadlock_free: assert property ( `clk_rst
-        not (##[1:$] ~exist_enabled_transition)
+        exist_enabled_transition
     );
 
     // Transition firing assumptions: a transitions can only be fired when
@@ -162,16 +163,16 @@ endmodule
 module bind_info();
 
     bind circuit spec u1 (
-          .reset(reset)
-        , .clk(clk)
-        , .fire(fire)
+        .reset(reset),
+        .clk(clk),
+        .fire(fire),
 
         {%- for net in nets %}
-        , .{{net}}({{net}})
+        .{{net}}({{net}}),
         {%- endfor -%}
 
         {%- for net in nets %}
-        , .{{net}}_precap({{net}}_precap)
+        .{{net}}_precap({{net}}_precap) {{- "," if not loop.last}}
         {%- endfor -%}
     );
 

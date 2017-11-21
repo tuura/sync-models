@@ -1,16 +1,16 @@
 // vi: set ft=verilog :
 
 module circuit (
-          input reset
-        , input clk
-        {{- ", det" if dbits -}}
+        input reset,
+        input clk,
+        {{- "det," if dbits -}}
 
         {%- for input in inputs %}
-        , input {{ input }}_precap // input
+        input {{ input }}_precap, // input
         {%- endfor %}
 
-        {%- for input in outputs|sort %}
-        , output {{ input }} // output
+        {%- for input in outputs %}
+        output {{ input }} {{- "," if not loop.last }} // output
         {%- endfor %}
     );
 
