@@ -7,6 +7,7 @@ from fabric.api import env
 from fabric.state import output
 from fabric.operations import put
 from fabric.operations import get
+from fabric.contrib.files import exists
 
 
 project_name       = "sync-models"
@@ -42,7 +43,9 @@ def verify():
         # Run ifv
         run("module load cadence-license && ./go.sh")
 
-        get("examples/counter.vcd", "counter.vcd")
+        # Grab counter-example
+        if exists("examples/counter.vcd"):
+            get("examples/counter.vcd", "counter.vcd")
 
 
 def clean():
