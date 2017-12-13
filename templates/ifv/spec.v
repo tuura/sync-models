@@ -117,7 +117,6 @@ module spec (
 
     // Output Persistency Properties:
     {% for net in stateful_nets %}
-    // persistency_{{net}}: assert property ( `clk_rst {{net}}_ena |=> ({{net}}_ena || ~$stable({{net}})) );
     persistency_{{net}}: assert property ( `clk_rst $fell({{net}}_ena) |-> ~$stable({{net}}) );
     {%- endfor %}
 
