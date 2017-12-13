@@ -12,15 +12,29 @@ from fabric.contrib.files import exists
 
 project_name       = "sync-models"
 workspace_dir      = "workspaces"
-env.host_string    = "eeehandel"
 output["status"]   = False
 output["running"]  = False
 env.output_prefix  = False
 env.use_ssh_config = True
+versify_host       = "vmach"
+ifv_host           = "eeebrahms"
+
+
+def vers():
+    env.host_string = versify_host
+
+    put("examples/flat-arbiter/correct.blif", "/home/ubuntu/circuit.blif")
+    put("examples/flat-arbiter/spec.g", "/home/ubuntu/spec.g")
+    put("libraries/workcraft.lib", "/home/ubuntu/versify.genlib")
+    put("libraries/extra.lib", "/home/ubuntu/extra.genlib")
+
+    with cd("/home/ubuntu"):
+        run("time versify -nosemi -Lversify.genlib -Ccircuit.blif -Espec.g")
 
 
 def verify():
 
+    env.host_string = ifv_host
     clean()
 
     run_name = "".join(sample(lowercase, 6))
@@ -36,7 +50,7 @@ def verify():
 
         # Copy files
         put("gates/*", "gates")
-        put("generated/*", "generated")
+        put("generated-ifv-perf/*", "generated")
         put("ifv/go.sh", "go.sh", mirror_local_mode=True)
         put("ifv/run.tcl", "run.tcl")
 
@@ -49,5 +63,7 @@ def verify():
 
 
 def clean():
+
+    env.host_string = ifv_host
     work_dir = "%s/%s/" % (workspace_dir, project_name)
     run("rm -rf %s" % work_dir)
