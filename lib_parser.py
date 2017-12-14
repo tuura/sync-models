@@ -1,28 +1,6 @@
 import re
 import json
 
-
-builtins_lib = {
-    "BUF_BUILTIN": {
-        "type": "GATE",
-        "state_input": None,
-        "output": "out",
-        "inputs": ["inp"],
-        "definition": "out=inp",
-        "lambda": (lambda inp: inp)
-    },
-    "AND2B": {
-        "type": "GATE",
-        "state_input": None,
-        "output": "O",
-        "inputs": ["AN", "B"],
-        "definition": "O=!AN*B",
-        "lambda": (lambda AN, B: (not AN) and B)
-    },
-
-}
-
-
 def make_int_lambda(boolean_lambda):
 
     def int_lambda(**args):

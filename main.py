@@ -3,7 +3,6 @@
 from sg_parser import load_sg
 from lib_parser import load_lib
 from lib_parser import merge_libs
-from lib_parser import builtins_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
 
@@ -114,11 +113,15 @@ def verify_circuit(lib, circuit, sg, quiet=False):
 
     # Explore state space
 
+    nstates = 0
+
     while to_visit:
 
         next_to_visit = set()
 
         for state in to_visit:
+
+            nstates += 1
 
             label = st_labels[state]
 
@@ -195,6 +198,8 @@ def verify_circuit(lib, circuit, sg, quiet=False):
 
         visited.union(to_visit)
 
+    print "Explored %s states" % nstates
+
     return (True, None)
 
 
@@ -215,10 +220,11 @@ def main():
 
     # Load library, circuit and spec
 
-    spec    = load_sg("examples/flat-arbiter/spec.sg")
-    circuit = load_verilog("examples/flat-arbiter/circuit.v")
+    spec    = load_sg("examples/buffers/spec-n50.sg")
+    circuit = load_verilog("examples/buffers/buffers-n50.v")
     lib_wk  = load_lib("libraries/workcraft.lib")
-    lib     = merge_libs(lib_wk, builtins_lib)
+    lib_ex  = load_lib("libraries/extra.lib")
+    lib     = merge_libs(lib_wk, lib_ex)
 
     result, msg = verify_circuit(lib, circuit, spec, quiet=True)
 

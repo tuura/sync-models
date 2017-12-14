@@ -4,7 +4,6 @@ from jinja2 import Template
 from sg_parser import load_sg
 from lib_parser import load_lib
 from lib_parser import merge_libs
-from lib_parser import builtins_lib
 from collections import defaultdict
 from verilog_parser import load_verilog
 
@@ -131,15 +130,16 @@ def generate(spec, circuit, lib, template):
 
 def main():
 
-    output_dir = "generated"
+    output_dir = "generated/ifv-perf"
 
     lib_wk  = load_lib("libraries/workcraft.lib")
-    lib     = merge_libs(lib_wk, builtins_lib)
-    spec    = load_sg("examples/flat-arbiter/spec.sg")
-    circuit = load_verilog("examples/flat-arbiter/circuit.v")
+    lib_ex  = load_lib("libraries/extra.lib")
+    lib     = merge_libs(lib_wk, lib_ex)
+    spec    = load_sg("examples/buffers/spec-n30.sg")
+    circuit = load_verilog("examples/buffers/buffers-n30.v")
 
-    spec_str    = generate(spec, circuit, lib, "templates/spec.v")
-    circuit_str = generate(spec, circuit, lib, "templates/circuit.v")
+    spec_str    = generate(spec, circuit, lib, "templates/ifv_perf/spec.v")
+    circuit_str = generate(spec, circuit, lib, "templates/ifv_perf/circuit.v")
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
