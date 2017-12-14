@@ -12,5 +12,8 @@
 	" Fail": "red bold",
 	" Pass": "green bold",
 	"\\b\\w+.compliance_\\w+": "magenta",
-	"\\b\\w+.persistency_\\w+": "cyan"
+	"\\b\\w+.persistency_\\w+": "cyan",
+	"Fatal error: (.*)": "red bold",
+	"^Error:(.*)": "red bold",
+	"^#.*": "cyan"
 }
