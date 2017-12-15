@@ -131,23 +131,22 @@ def generate(spec, circuit, lib, template):
 def main():
 
     output_dir = "generated/ifv-perf"
+    templates = "templates/ifv-perf/"
 
     lib     = load_lib("libraries/*.lib")
     spec    = load_sg("examples/buffers/spec-n30.sg")
     circuit = load_verilog("examples/buffers/buffers-n30.v")
 
-    spec_str    = generate(spec, circuit, lib, "templates/ifv_perf/spec.v")
-    circuit_str = generate(spec, circuit, lib, "templates/ifv_perf/circuit.v")
-
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    spec_file    = os.path.join(output_dir, "spec.v")
-    circuit_file = os.path.join(output_dir, "circuit.v")
+    for file in os.listdir(templates):
 
-    write_file(spec_str, spec_file)
-    write_file(circuit_str, circuit_file)
-
+        fullfile = os.path.join(templates, file)
+        output_file = os.path.join(output_dir, file)
+        content = generate(spec, circuit, lib, fullfile)
+        print "Generating %s ...." % output_file
+        write_file(content, output_file)
 
 if __name__ == '__main__':
     main()
