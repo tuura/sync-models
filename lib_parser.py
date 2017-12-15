@@ -69,7 +69,14 @@ def parse_gate_def(gate_type, gate_name, gate_def, dummy=None, state_input=None)
     }
 
 
-def load_lib(file):
+def load_lib(*files):
+    """Load and return multiple libraries as one."""
+
+    libs = map(load_single_lib, files)
+    return merge_libs(*libs)
+
+
+def load_single_lib(file):
 
     with open(file, "r") as fid:
         content = fid.read().replace("\r", "")
