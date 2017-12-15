@@ -132,7 +132,7 @@ def main():
 
     output_dir = "generated/ifv-perf"
 
-    lib     = load_lib("libraries/workcraft.lib", "libraries/extra.lib")
+    lib     = load_lib("libraries/*.lib")
     spec    = load_sg("examples/buffers/spec-n30.sg")
     circuit = load_verilog("examples/buffers/buffers-n30.v")
 

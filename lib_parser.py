@@ -1,5 +1,6 @@
 import re
 import json
+import glob
 
 def make_int_lambda(boolean_lambda):
 
@@ -70,9 +71,15 @@ def parse_gate_def(gate_type, gate_name, gate_def, dummy=None, state_input=None)
 
 
 def load_lib(*files):
-    """Load and return multiple libraries as one."""
+    """Load and return multiple libraries as one.
 
-    libs = map(load_single_lib, files)
+    'files' items can be glob patterns (e.g. 'libraries/*.lib').
+    """
+
+    matches = [glob.glob(file) for file in files]
+    matches_flat = sum(matches, [])
+
+    libs = map(load_single_lib, matches_flat)
     return merge_libs(*libs)
 
 

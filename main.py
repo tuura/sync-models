@@ -222,7 +222,7 @@ def main():
 
     spec    = load_sg("examples/buffers/spec-n50.sg")
     circuit = load_verilog("examples/buffers/buffers-n50.v")
-    lib     = load_lib("libraries/workcraft.lib", "libraries/extra.lib")
+    lib     = load_lib("libraries/*.lib")
 
     result, msg = verify_circuit(lib, circuit, spec, quiet=True)
 
