@@ -23,6 +23,18 @@ ifv \
 	+bind_top+bind_info \
 	+nocopyright \
 	-q \
+	# +nohal \
+	# +disable_xcheck \
+	# +bb_gen \
 	# +gui
 
-simvisdbutil -vcd $WORK_DIR/examples -output $EXAMPLE_DIR/counter.vcd -overwrite >/dev/null 2>&1
+# Export counter-example as VCD file
+
+if [ ! -z "$(ls $WORK_DIR/examples)" ]; then
+	echo "Converting counter-example to VCD ..."
+	simvisdbutil \
+		-vcd $WORK_DIR/examples \
+		-output $EXAMPLE_DIR/counter.vcd \
+		-overwrite \
+		>/dev/null 2>&1
+fi
