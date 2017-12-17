@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from docopt import docopt
 from sg_parser import load_sg
 from lib_parser import load_lib
 from lib_parser import merge_libs
@@ -7,6 +8,15 @@ from collections import defaultdict
 from verilog_parser import load_verilog
 
 import json
+
+usage = """verifier.py
+
+Usage:
+  verifier.py [options] <circuit.v> <spec.sg>
+
+Options:
+  -q --quiet  Suppress printing state exploration details.
+"""
 
 
 def get_next_state(encoding, state, transition):
@@ -220,11 +230,13 @@ def main():
 
     # Load library, circuit and spec
 
-    spec    = load_sg("examples/buffers/spec-n50.sg")
-    circuit = load_verilog("examples/buffers/buffers-n50.v")
+    args = docopt(usage, version="verifier.py v0.1")
+
+    spec    = load_sg(args["<spec.sg>"])
+    circuit = load_verilog(args["<circuit.v>"])
     lib     = load_lib("libraries/*.lib")
 
-    result, msg = verify_circuit(lib, circuit, spec, quiet=True)
+    result, msg = verify_circuit(lib, circuit, spec, quiet=args["--quiet"])
 
     print("Result: " + ("PASS" if result else "FAIL"))
 
