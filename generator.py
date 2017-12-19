@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from docopt import docopt
 from jinja2 import Template
 from sg_parser import load_sg
 from lib_parser import load_lib
@@ -11,6 +12,13 @@ import os
 import re
 import json
 import math
+
+usage = """generator.py
+
+Usage:
+  generator.py <circuit.v> <spec.sg> <templates> <gendir>
+
+"""
 
 
 def read_file(file):
@@ -130,12 +138,14 @@ def generate(spec, circuit, lib, template):
 
 def main():
 
-    output_dir = "generated/ifv-perf"
-    templates = "templates/ifv-perf/"
+    args = docopt(usage, version="generator.py v0.1")
 
+    output_dir = args["<gendir>"]
+    templates = args["<templates>"]
+
+    circuit = load_verilog(args["<circuit.v>"])
+    spec    = load_sg(args["<spec.sg>"])
     lib     = load_lib("libraries/*.lib")
-    spec    = load_sg("examples/buffers/spec-n30.sg")
-    circuit = load_verilog("examples/buffers/buffers-n30.v")
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
