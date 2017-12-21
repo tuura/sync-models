@@ -31,6 +31,9 @@ def load_sg(file):
         elif words[0] == ".marking":
             sg["initial_state"] = words[1][1:-1]
 
+        elif words[0][0] == ".":
+            raise Exception("Unsupported statement: %s" % words[0])
+
         else:
             sg["transitions"].append(words)
 
