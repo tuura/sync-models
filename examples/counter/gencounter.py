@@ -1,4 +1,6 @@
 
+import sys
+
 def main():
 
     header = """
@@ -8,23 +10,29 @@ def main():
     output ro, ai;
     """
 
-    template = """
-    // Stage %(ind)d
+    circuit_variation = 1
 
-    AOI2BB2 U0_%(ind)d (.ON(ai_%(ind)d), .A1N(ao_%(ind)d), .A2N(U2_ON_%(ind)d), .B1(ao_%(ind)d), .B2(ri_%(ind)d));
-    AOI2BB2 U1_%(ind)d (.ON(ro_%(ind)d), .A1N(ri_%(ind)d), .A2N(U2_ON_%(ind)d), .B1(ri_%(ind)d), .B2(U2_ON_%(ind)d));
-    AOI2BB2 U2_%(ind)d (.ON(U2_ON_%(ind)d), .A1N(ao_%(ind)d), .A2N(U2_ON_%(ind)d), .B1(ao_%(ind)d), .B2(ai_%(ind)d));
-    """
-    initial_str = "!ai_%(ind)d !ro_%(ind)d !U2_ON_%(ind)d !ao_%(ind)d !ri_%(ind)d"
+    n = int(sys.argv[1])
 
+    if circuit_variation == 1:
 
+        template = """
+        // Stage %(ind)d
 
-    template = """
-    NOR2 _U0_%(ind)d (.ON(ai_%(ind)d)    , .A(ao_%(ind)d), .B(_U2_QN_%(ind)d));
-    AND2 _U1_%(ind)d (.O(ro_%(ind)d)     , .A(ri_%(ind)d), .B(_U2_QN_%(ind)d));
-    NC2  _U2_%(ind)d (.QN(_U2_QN_%(ind)d), .A(ao_%(ind)d), .B(ri_%(ind)d));
-    """
-    initial_str = "!ai_%(ind)d !ro_%(ind)d _U2_QN_%(ind)d !ao_%(ind)d !ri_%(ind)d"
+        AOI2BB2 U0_%(ind)d (.ON(ai_%(ind)d), .A1N(ao_%(ind)d), .A2N(U2_ON_%(ind)d), .B1(ao_%(ind)d), .B2(ri_%(ind)d));
+        AOI2BB2 U1_%(ind)d (.ON(ro_%(ind)d), .A1N(ri_%(ind)d), .A2N(U2_ON_%(ind)d), .B1(ri_%(ind)d), .B2(U2_ON_%(ind)d));
+        AOI2BB2 U2_%(ind)d (.ON(U2_ON_%(ind)d), .A1N(ao_%(ind)d), .A2N(U2_ON_%(ind)d), .B1(ao_%(ind)d), .B2(ai_%(ind)d));
+        """
+        initial_str = "!ai_%(ind)d !ro_%(ind)d !U2_ON_%(ind)d !ao_%(ind)d !ri_%(ind)d"
+
+    else:
+
+        template = """
+        NOR2 _U0_%(ind)d (.ON(ai_%(ind)d)    , .A(ao_%(ind)d), .B(_U2_QN_%(ind)d));
+        AND2 _U1_%(ind)d (.O(ro_%(ind)d)     , .A(ri_%(ind)d), .B(_U2_QN_%(ind)d));
+        NC2  _U2_%(ind)d (.QN(_U2_QN_%(ind)d), .A(ao_%(ind)d), .B(ri_%(ind)d));
+        """
+        initial_str = "!ai_%(ind)d !ro_%(ind)d _U2_QN_%(ind)d !ao_%(ind)d !ri_%(ind)d"
 
     # // This inverter should have a short delay
     # INV _U0_%(ind)d (.ON(_U0_ON_%(ind)d), .I(ri_%(ind)d));
@@ -52,8 +60,6 @@ def main():
 
     endmodule
     """
-
-    n = 2
 
     def print_fix(content):
         ao_last = "ao_%d" % (n - 1)
