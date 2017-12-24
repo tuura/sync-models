@@ -15,7 +15,9 @@ Usage:
   verifier.py [options] <circuit.v> <spec.sg>
 
 Options:
-  -q --quiet  Suppress printing state exploration details.
+  -q --quiet      Suppress printing state exploration details.
+  -l --lib=<dir>  Load libraries from specific directory [default: libraries].
+
 """
 
 
@@ -234,7 +236,7 @@ def main():
 
     spec    = load_sg(args["<spec.sg>"])
     circuit = load_verilog(args["<circuit.v>"])
-    lib     = load_lib("libraries/*.lib")
+    lib     = load_lib("%s/*.lib" % args["--lib"])
 
     result, msg = verify_circuit(lib, circuit, spec, quiet=args["--quiet"])
 
