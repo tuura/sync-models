@@ -65,7 +65,7 @@ def verify_circuit(lib, circuit, sg, quiet=False):
 
         output_pin = gate["output"]
 
-        inputs = { pin: module["connections"][pin] for pin in gate["inputs"]}
+        inputs = {pin: module["connections"][pin] for pin in gate["inputs"]}
 
         output = module["connections"][gate["output"]]
 
@@ -77,8 +77,8 @@ def verify_circuit(lib, circuit, sg, quiet=False):
     #
     # 2. sg_trs: current_state -> set([valid_transition])
 
-    sg_next_states = { (prev_st, tr): next_st
-        for prev_st, tr, next_st in sg["transitions"] }
+    sg_next_states = {(prev_st, tr): next_st
+                      for prev_st, tr, next_st in sg["transitions"]}
 
     sg_trs = defaultdict(set)
 
@@ -87,33 +87,37 @@ def verify_circuit(lib, circuit, sg, quiet=False):
 
     # Prepare some handy structures and functions
 
-    st_labels = { initial_state: sg["initial_state"] }  # map: state -> label
+    st_labels = {initial_state: sg["initial_state"]}  # map: state -> label
 
-    inputs  = sg["inputs"]
+    inputs = sg["inputs"]
     outputs = sg["outputs"]
     internals = set(encoding) - set(inputs) - set(outputs)
 
-    pos_tran = lambda signal: "%s+" % signal
-    neg_tran = lambda signal: "%s-" % signal
+    def pos_tran(signal):
+        return "%s+" % signal
 
-    all_inp_trs = set(map(pos_tran, inputs   ) + map(neg_tran, inputs   ))
-    all_out_trs = set(map(pos_tran, outputs  ) + map(neg_tran, outputs  ))
+    def neg_tran(signal):
+        return "%s-" % signal
+
+    all_inp_trs = set(map(pos_tran, inputs) + map(neg_tran, inputs))
+    all_out_trs = set(map(pos_tran, outputs) + map(neg_tran, outputs))
     all_int_trs = set(map(pos_tran, internals) + map(neg_tran, internals))
 
-    visited  = { initial_state }
-    to_visit = { initial_state }
+    visited = {initial_state}
+    to_visit = {initial_state}
 
-    show_state = lambda state: "".join(map(str, state))
+    def show_state(state):
+        return "".join(map(str, state))
 
     # Enumerate atomic transitions
 
-    # 'atomic_trs' is a map tr1 -> [tr2] where tr2 occurs on the same clock time
-    # 'as tr1
+    # 'atomic_trs' is a map tr1 -> [tr2] where tr2 occurs on the same clock
+    # 'time as tr1
 
     atomic_trs = defaultdict(list)
 
-    short_delay_invs = [ mod for mod in circuit["modules"].values()
-        if mod.get("short_delay") ]
+    short_delay_invs = [mod for mod in circuit["modules"].values()
+                        if mod.get("short_delay")]
 
     for inv in short_delay_invs:
         inp, out = inv["connections"]["I"], inv["connections"]["ON"]
@@ -136,7 +140,8 @@ def verify_circuit(lib, circuit, sg, quiet=False):
             label = st_labels[state]
 
             if not quiet:
-                print_underlined("visiting state %s (%s):" % (show_state(state), label))
+                print_underlined("visiting state %s (%s):" %
+                                 (show_state(state), label))
 
             visited.add(state)
 
@@ -146,10 +151,11 @@ def verify_circuit(lib, circuit, sg, quiet=False):
 
             for output, (gate, connections) in implementation.iteritems():
 
-                gate_inputs = { port: (get_signal_value(encoding, state, signal))
-                    for port, signal in connections.iteritems() }
+                gate_inputs = {port:
+                               (get_signal_value(encoding, state, signal))
+                               for port, signal in connections.iteritems()}
 
-                next_sig_state = gate["lambda"](**gate_inputs)  # post transition
+                next_sig_state = gate["lambda"](**gate_inputs)  # post trans
 
                 if next_sig_state != get_signal_value(encoding, state, output):
                     tran = "%s%s" % (output, "+" if next_sig_state else "-")
@@ -167,13 +173,15 @@ def verify_circuit(lib, circuit, sg, quiet=False):
             invalid_output_trs = circuit_out_trs - spec_trs
 
             if not quiet:
-                print "Transitions (Internal) : %s" % list(circuit_trs & all_int_trs)
+                internal_trs = circuit_trs & all_int_trs
+                print "Transitions (Internal) : %s" % list(internal_trs)
                 print "Transitions (Input)    : %s" % list(spec_inp_trs)
                 print "Transitions (Output)   : %s" % list(circuit_out_trs)
                 print ""
 
             if not (circuit_trs or spec_inp_trs):
-                return (False, "Deadlock in state %s (%s)" % (show_state(state), label))
+                return (False, "Deadlock in state %s (%s)" %
+                        (show_state(state), label))
 
             if invalid_output_trs:
 
@@ -183,8 +191,8 @@ def verify_circuit(lib, circuit, sg, quiet=False):
                         print "%10s = %s" % (signal, value)
                     print ""
 
-                return (False, "Found non-compliant circuit output transition(s): %s" %
-                    list(invalid_output_trs))
+                return (False, ("Found non-compliant circuit" +
+                        "output transition(s): %s") % list(invalid_output_trs))
 
             # discover next states
 
@@ -194,8 +202,9 @@ def verify_circuit(lib, circuit, sg, quiet=False):
                 for tr2 in atomic_trs.get(tr, []):
                     next_state = get_next_state(encoding, next_state, tr2)
 
+                # next_label is label of next state
+                next_label = sg_next_states.get((label, tr), label)
 
-                next_label = sg_next_states.get((label, tr), label)  # label of next state
                 st_labels[next_state] = next_label
                 next_to_visit.add(next_state)
                 if not quiet:
@@ -232,9 +241,9 @@ def main():
 
     args = docopt(usage, version="verifier.py v0.1")
 
-    spec    = load_sg(args["<spec.sg>"])
+    spec = load_sg(args["<spec.sg>"])
     circuit = load_verilog(args["<circuit.v>"])
-    lib     = load_lib("libraries/*.lib")
+    lib = load_lib("libraries/*.lib")
 
     result, msg = verify_circuit(lib, circuit, spec, quiet=args["--quiet"])
 
