@@ -49,15 +49,15 @@ def get_workcraft_state_ind(state):
 def get_state_inds(spec):
     """Return a map: state -> index."""
 
-    froms = [ item[0] for item in spec["transitions"]]
-    tos   = [ item[2] for item in spec["transitions"]]
+    froms = [item[0] for item in spec["transitions"]]
+    tos = [item[2] for item in spec["transitions"]]
 
     states = sorted(set(froms + tos))
     workcraft_inds = map(get_workcraft_state_ind, states)
     workcraft_valid = not any([ind is None for ind in workcraft_inds])
     inds = workcraft_inds if workcraft_valid else range(len(states))
 
-    inds = { state: ind for ind, state in zip(inds, states) }
+    inds = {state: ind for ind, state in zip(inds, states)}
     return inds
 
 
@@ -88,47 +88,50 @@ def get_nond_groups(transitions):
 
 def generate(spec, circuit, lib, template):
 
-    stateful = { inst: body for inst, body in circuit["modules"].iteritems()
-        if not body.get("short_delay") }
+    stateful = {inst: body for inst, body in circuit["modules"].iteritems()
+                if not body.get("short_delay")}
 
-    stateless = { inst: body for inst, body in circuit["modules"].iteritems()
-        if body.get("short_delay") }
+    stateless = {inst: body for inst, body in circuit["modules"].iteritems()
+                 if body.get("short_delay")}
 
-    get_output_pin   = lambda mod: lib[mod["type"]]["output"]
-    get_output_net   = lambda mod: mod["connections"][get_output_pin(mod)]
+    def get_output_pin(mod):
+        return lib[mod["type"]]["output"]
 
-    stateful_nets    = sorted(map(get_output_net, stateful.values()))
-    stateless_nets   = sorted(map(get_output_net, stateless.values()))
-    stateless_outs   = set(circuit["outputs"]) & set(stateless_nets)
+    def get_output_net(mod):
+        return mod["connections"][get_output_pin(mod)]
+
+    stateful_nets = sorted(map(get_output_net, stateful.values()))
+    stateless_nets = sorted(map(get_output_net, stateless.values()))
+    stateless_outs = set(circuit["outputs"]) & set(stateless_nets)
     ndinds, ndcounts = get_nond_groups(spec["transitions"])
-    ndbits           = bit_size(max(ndcounts.values()))
-    inputs           = sorted(spec["inputs"])
-    outputs          = sorted(spec["outputs"])
-    nets             = inputs + stateful_nets
-    firebits         = bit_size(len(nets))
-    transitions      = sorted(spec["transitions"])
-    firing_indices   = { net: nets.index(net) for net in nets }
+    ndbits = bit_size(max(ndcounts.values()))
+    inputs = sorted(spec["inputs"])
+    outputs = sorted(spec["outputs"])
+    nets = inputs + stateful_nets
+    firebits = bit_size(len(nets))
+    transitions = sorted(spec["transitions"])
+    firing_indices = {net: nets.index(net) for net in nets}
 
     context = {
-        "lib"            : lib,
-        "inputs"         : inputs,
-        "outputs"        : outputs,
-        "get_output_net" : get_output_net,
-        "get_output_pin" : get_output_pin,
-        "firing_indices" : firing_indices,
-        "nets"           : nets,
-        "transitions"    : transitions,
-        "firebits"       : firebits,
-        "initial_spec"   : spec["initial_state"],  # string
-        "stateless"      : stateless,  # dictionary of stateless modules
-        "state_inds"     : get_state_inds(spec),  # state -> index
+        "lib": lib,
+        "inputs": inputs,
+        "outputs": outputs,
+        "get_output_net": get_output_net,
+        "get_output_pin": get_output_pin,
+        "firing_indices": firing_indices,
+        "nets": nets,
+        "transitions": transitions,
+        "firebits": firebits,
+        "initial_spec": spec["initial_state"],  # string
+        "stateless": stateless,  # dictionary of stateless modules
+        "state_inds": get_state_inds(spec),  # state -> index
         "initial_circuit": circuit["initial_state"],  # dict: signal -> state
-        "ndinds"         : ndinds,
-        "ndcounts"       : ndcounts,
-        "ndbits"         : ndbits,
-        "stateful"       : stateful,
-        "stateful_nets"  : stateful_nets,
-        "stateless_outs" : stateless_outs
+        "ndinds": ndinds,
+        "ndcounts": ndcounts,
+        "ndbits": ndbits,
+        "stateful": stateful,
+        "stateful_nets": stateful_nets,
+        "stateless_outs": stateless_outs
     }
 
     template = Template(read_file(template))
@@ -144,8 +147,8 @@ def main():
     templates = args["<templates>"]
 
     circuit = load_verilog(args["<circuit.v>"])
-    spec    = load_sg(args["<spec.sg>"])
-    lib     = load_lib("libraries/*.lib")
+    spec = load_sg(args["<spec.sg>"])
+    lib = load_lib("libraries/*.lib")
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -157,6 +160,7 @@ def main():
         content = generate(spec, circuit, lib, fullfile)
         print "Generating %s ...." % output_file
         write_file(content, output_file)
+
 
 if __name__ == '__main__':
     main()
