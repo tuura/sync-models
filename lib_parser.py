@@ -2,10 +2,11 @@ import re
 import json
 import glob
 
+
 def make_int_lambda(boolean_lambda):
 
     def int_lambda(**args):
-        bool_args = { key: bool(val) for key, val in args.iteritems() }
+        bool_args = {key: bool(val) for key, val in args.iteritems()}
         bool_result = boolean_lambda(**bool_args)
         int_result = 1 if bool_result else 0
         return int_result
@@ -49,9 +50,10 @@ def get_lambda(gate_def, inputs):
     return make_int_lambda(boolean_lambda)
 
 
-def parse_gate_def(gate_type, gate_name, gate_def, dummy=None, state_input=None):
+def parse_gate_def(gate_type, gate_name, gate_def, dummy=None,
+                   state_input=None):
 
-    constants = { "CONST0", "CONST1" }
+    constants = {"CONST0", "CONST1"}
 
     reg_signals = r"[\w0-9]+"
 
@@ -88,11 +90,12 @@ def load_single_lib(file):
     with open(file, "r") as fid:
         content = fid.read().replace("\r", "")
 
-    reg_gate = r"^(GATE|LATCH)\s*(\w+)\s*[0-9]+\s*([\w=!()\*+]+);([\w.\s]+SEQ\s+[\w]+\s+(\w+))?";
+    reg_gate = r"^(GATE|LATCH)\s*(\w+)\s*[0-9]+" + \
+        r"\s*([\w=!()\*+]+);([\w.\s]+SEQ\s+[\w]+\s+(\w+))?"
 
     matches = re.compile(reg_gate, flags=re.MULTILINE).findall(content)
 
-    lib = { item[1]: parse_gate_def(*item) for item in matches }
+    lib = {item[1]: parse_gate_def(*item) for item in matches}
 
     return lib
 
@@ -109,21 +112,27 @@ def export_verilog(lib, output_file):
         """Return the verilog equivalent of a lib experession, for example:
         'y=!(A*B+C)' -> 'y=~(A&B|C)'.
         """
-        reps  = [("!", "~"), ("*", " & "), ("+", " | "), ("=", " = "), ("CONST", "")]
-        red_fun = lambda expr, item: expr.replace(*item)
+        reps = [("!", "~"), ("*", " & "), ("+", " | "), ("=", " = "),
+                ("CONST", "")]
+
+        def red_fun(expr, item):
+            return expr.replace(*item)
+
         return reduce(red_fun, reps, lib_expr)
 
     def get_module_verilog(mod_tup):
         """Return verilog representation of module."""
         name, module = mod_tup
-        port_parts   = ["output %s" % module["output"]]  + ["input %s" % input for input in module["inputs"]]
-        port_str     = ", ".join(port_parts)
-        header       = "module %s (%s);" % (name, port_str)
-        body         = "    assign %s;" % get_verilog_expr(module["definition"])
-        footer       = "endmodule"
+        output_port_parts = ["output %s" % module["output"]]
+        input_port_parts = ["input %s" % input for input in module["inputs"]]
+        port_parts = output_port_parts + input_port_parts
+        port_str = ", ".join(port_parts)
+        header = "module %s (%s);" % (name, port_str)
+        body = "    assign %s;" % get_verilog_expr(module["definition"])
+        footer = "endmodule"
         return "\n".join([header, body, footer])
 
-    gates = filter(lambda item: item[1]["type"]=="GATE", lib.iteritems())
+    gates = filter(lambda item: item[1]["type"] == "GATE", lib.iteritems())
     mod_strs = map(get_module_verilog, gates)
     verilog_str = "\n\n".join(mod_strs)
     write_file(output_file, verilog_str)
