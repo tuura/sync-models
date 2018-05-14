@@ -16,26 +16,13 @@ def load_sg(file):
 
         words = line.split()
 
-        if words[0] in ignored:
-            pass
-
-        elif words[0] == ".model":
-            sg["model"] = words[1]
-
-        elif words[0] == ".inputs":
-            sg["inputs"] = words[1:]
-
-        elif words[0] == ".outputs":
-            sg["outputs"] = words[1:]
-
-        elif words[0] == ".marking":
-            sg["initial_state"] = words[1][1:-1]
-
-        elif words[0][0] == ".":
-            raise Exception("Unsupported statement: %s" % words[0])
-
-        else:
-            sg["transitions"].append(words)
+        if words[0] in ignored: pass
+        elif words[0] == ".model": sg["model"] = words[1]
+        elif words[0] == ".inputs": sg["inputs"] = words[1:]
+        elif words[0] == ".outputs": sg["outputs"] = words[1:]
+        elif words[0] == ".marking": sg["initial_state"] = words[1][1:-1]
+        elif words[0][0] == ".": raise Exception("Unsupported statement: %s" % words[0])
+        else: sg["transitions"].append(words)
 
     return sg
 
