@@ -9,10 +9,10 @@ from verilog_parser import load_verilog
 
 import json
 
-usage = """verifier.py
+usage = """Exhaustive State Space Exporation Tool (ESSET)
 
 Usage:
-  verifier.py [options] <circuit.v> <spec.sg>
+  esset.py [options] <circuit.v> <spec.sg>
 
 Options:
   -q --quiet      Suppress printing state exploration details.
@@ -241,7 +241,7 @@ def main():
 
     # Load library, circuit and spec
 
-    args = docopt(usage, version="verifier.py v0.1")
+    args = docopt(usage, version="esset.py v0.1")
 
     spec = load_sg(args["<spec.sg>"])
     circuit = load_verilog(args["<circuit.v>"])
