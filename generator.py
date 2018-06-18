@@ -86,7 +86,8 @@ def get_nond_groups(transitions):
     return inds, counts
 
 
-def generate(spec, circuit, lib, template):
+def get_circuit_context(circuit, lib):
+    """Return a Jinja context representing a circuit."""
 
     stateful = {inst: body for inst, body in circuit["modules"].iteritems()
                 if not body.get("short_delay")}
@@ -103,62 +104,95 @@ def generate(spec, circuit, lib, template):
     stateful_nets = sorted(map(get_output_net, stateful.values()))
     stateless_nets = sorted(map(get_output_net, stateless.values()))
     stateless_outs = set(circuit["outputs"]) & set(stateless_nets)
-    ndinds, ndcounts = get_nond_groups(spec["transitions"])
-    ndbits = bit_size(max(ndcounts.values()))
-    inputs = sorted(spec["inputs"])
-    outputs = sorted(spec["outputs"])
+    inputs = sorted(circuit["inputs"])
+    outputs = sorted(circuit["outputs"])
     nets = inputs + stateful_nets
     firebits = bit_size(len(nets))
-    transitions = sorted(spec["transitions"])
     firing_indices = {net: nets.index(net) for net in nets}
 
-    context = {
+    return {
         "lib": lib,
+        "nets": nets,
         "inputs": inputs,
         "outputs": outputs,
+        "firebits": firebits,
+        "stateful": stateful,
+        "stateless": stateless,  # dictionary of stateless modules
+        "stateful_nets": stateful_nets,
+        "stateless_outs": stateless_outs
         "get_output_net": get_output_net,
         "get_output_pin": get_output_pin,
         "firing_indices": firing_indices,
-        "nets": nets,
-        "transitions": transitions,
-        "firebits": firebits,
-        "initial_spec": spec["initial_state"],  # string
-        "stateless": stateless,  # dictionary of stateless modules
-        "state_inds": get_state_inds(spec),  # state -> index
         "initial_circuit": circuit["initial_state"],  # dict: signal -> state
-        "ndinds": ndinds,
-        "ndcounts": ndcounts,
-        "ndbits": ndbits,
-        "stateful": stateful,
-        "stateful_nets": stateful_nets,
-        "stateless_outs": stateless_outs
     }
 
-    template = Template(read_file(template))
 
-    return template.render(context)
+def get_spec_context(spec, circuit, lib):
+    """Return a Jinja context representing a spec."""
+
+    transitions = sorted(spec["transitions"])
+    ndinds, ndcounts = get_nond_groups(spec["transitions"])
+    ndbits = bit_size(max(ndcounts.values()))
+
+    return {
+        "ndinds": ndinds,
+        "ndbits": ndbits,
+        "ndcounts": ndcounts,
+        "state_inds": get_state_inds(spec),  # state -> index
+        "transitions": transitions,
+        "initial_spec": spec["initial_state"],  # string
+    }
+
+
+def generate_circuit(circuit, lib, template):
+
+    circuit_context = get_circuit_context(circuit, lib)
+    template = Template(read_file(template))
+    return template.render(circuit_context)
+
+
+def generate_spec(spec, circuit, lib, template):
+
+    spec_context = get_spec_context(spec, circuit, lib)
+    circuit_context = get_circuit_context(circuit, lib)
+
+    combined_context = dict()
+    combined_context.update(spec_context)
+    combined_context.update(circuit_context)
+
+    template = Template(read_file(template))
+    return template.render(combined_context)
 
 
 def main():
 
     args = docopt(usage, version="generator.py v0.1")
 
-    output_dir = args["<gendir>"]
     templates = args["<templates>"]
+    output_dir = args["<gendir>"]
 
-    circuit = load_verilog(args["<circuit.v>"])
-    spec = load_sg(args["<spec.sg>"])
     lib = load_lib("libraries/*.lib")
+    spec = load_sg(args["<spec.sg>"])
+    circuit = load_verilog(args["<circuit.v>"])
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    for file in os.listdir(templates):
+    circuit_file, spec_file = 'circuit.v', 'spec.v'
 
-        fullfile = os.path.join(templates, file)
+    def gen_circ(template_file):
+        return generate_circuit(circuit, lib, template_file)
+
+    def gen_spec(template_file):
+        return generate_spec(spec, circuit, lib, template_file)
+
+    template_files = [("circuit.v", gen_circ), ("spec.v", gen_spec)]
+
+    for file, generate in template_files:
+        print "Generating %s ...." % file
+        template_file = os.path.join(templates, file)
         output_file = os.path.join(output_dir, file)
-        content = generate(spec, circuit, lib, fullfile)
-        print "Generating %s ...." % output_file
+        content = generate(template_file)
         write_file(content, output_file)
 
 
