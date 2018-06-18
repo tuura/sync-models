@@ -64,7 +64,7 @@ the formal verification tool [Xprova](https://github.com/xprova/xprova).
 
 ### Formal Verification Tool: ESSET
 
-The repository contains a low-performance verification tool `verifier.py`
+The repository contains a low-performance verification tool `esset.py`
 referred to in the paper as the Exhaustive State Space Exploration Tool
 (ESSET). It's a compliance checker used mainly to cross-validate verification
 results with other tools.
@@ -73,7 +73,7 @@ results with other tools.
 
 ```
 Usage:
-  verifier.py [options] <circuit.v> <spec.sg>
+  esset.py [options] <circuit.v> <spec.sg>
 
 Options:
   -q --quiet      Suppress printing state exploration details.
