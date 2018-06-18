@@ -16,7 +16,7 @@ import math
 usage = """generator.py
 
 Usage:
-  generator.py <circuit.v> <spec.sg> <templates> <gendir>
+  generator.py [--spec=<spec.sg>] <circuit.v> <templates> <gendir>
 
 """
 
@@ -89,11 +89,17 @@ def get_nond_groups(transitions):
 def get_circuit_context(circuit, lib):
     """Return a Jinja context representing a circuit."""
 
-    stateful = {inst: body for inst, body in circuit["modules"].iteritems()
-                if not body.get("short_delay")}
+    stateful = {
+        inst: body
+        for inst, body in circuit["modules"].iteritems()
+        if not body.get("short_delay")
+    }
 
-    stateless = {inst: body for inst, body in circuit["modules"].iteritems()
-                 if body.get("short_delay")}
+    stateless = {
+        inst: body
+        for inst, body in circuit["modules"].iteritems()
+        if body.get("short_delay")
+    }
 
     def get_output_pin(mod):
         return lib[mod["type"]]["output"]
@@ -119,11 +125,11 @@ def get_circuit_context(circuit, lib):
         "stateful": stateful,
         "stateless": stateless,  # dictionary of stateless modules
         "stateful_nets": stateful_nets,
-        "stateless_outs": stateless_outs
+        "stateless_outs": stateless_outs,
         "get_output_net": get_output_net,
         "get_output_pin": get_output_pin,
         "firing_indices": firing_indices,
-        "initial_circuit": circuit["initial_state"],  # dict: signal -> state
+        "initial_circuit": circuit["initial_state"]  # dict: signal -> state
     }
 
 
@@ -140,7 +146,7 @@ def get_spec_context(spec, circuit, lib):
         "ndcounts": ndcounts,
         "state_inds": get_state_inds(spec),  # state -> index
         "transitions": transitions,
-        "initial_spec": spec["initial_state"],  # string
+        "initial_spec": spec["initial_state"]  # string
     }
 
 
@@ -172,7 +178,7 @@ def main():
     output_dir = args["<gendir>"]
 
     lib = load_lib("libraries/*.lib")
-    spec = load_sg(args["<spec.sg>"])
+    spec = load_sg(args["--spec"]) if args["--spec"] else None
     circuit = load_verilog(args["<circuit.v>"])
 
     if not os.path.exists(output_dir):
@@ -186,7 +192,8 @@ def main():
     def gen_spec(template_file):
         return generate_spec(spec, circuit, lib, template_file)
 
-    template_files = [("circuit.v", gen_circ), ("spec.v", gen_spec)]
+    if spec: template_files = [("circuit.v", gen_circ), ("spec.v", gen_spec)]
+    else: template_files = [("circuit.v", gen_circ)]
 
     for file, generate in template_files:
         print "Generating %s ...." % file
