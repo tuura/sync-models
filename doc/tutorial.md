@@ -49,6 +49,8 @@ From a quick look at `circuit`, the main components of the model are:
 - additional flip-flops to capture wire states (e.g. `ao_ff`)
 - an unbound register `fire` that determines transition ordering
 
+Read the [next subsection](#verification) for instructions on how to use this circuit in verification.
+
 ```verilog
 // vi: set ft=verilog :
 
@@ -151,3 +153,42 @@ module circuit_inner (
 
 endmodule
 ```
+
+### Verification
+
+The model above can be used as a drop-in replacement for the input async
+circuit. Once the model is instantiated in the parent system, system-level
+properties can be written and checked using standard (sync) verification
+tools.
+
+To keep things simple, we will verify the model on its own in this tutorial.
+Also, instead of writing formal properties ourselves, we will use the tool to
+create a sync _specification model_ of `d-element`. The specification model
+(spec model for short) contains a synchronous FSM that can be simulated in
+tandom with the circuit model to detect transitions that don't conform to
+specification. To generate this model, run:
+
+```
+./generator.py --spec examples/d-element/spec.sg --output generated examples/d-element/circuit.v
+```
+
+This call is similar to the one before but with two differences:
+
+1. We use `--spec` to load a Signal Transition specification file (in `.sg` format)
+2. We use `--output` to write output files to a directory `generated` instead of printing them on the terminal window
+
+When `--spec` is used, the tool generates both the circuit and a spec model.
+The directory `generated` should now contain two files:
+
+- `circuit.v` (circuit model)
+- `spec.v` (spec model)
+
+The file `spec.v` contains two modules: the spec model itself (`spec`) and a
+binding module (`bind_info`). The latter is used by many verification tools to
+_inject_ verification properties and associated circuitry into a target
+circuit (it is considered good practice to separate module implementation and
+verification properties).
+
+Both files can now be passed to a sync formal verification tool to verify spec
+compliance. If the verification tool does not support loading `.lib` files,
+corresponding Verilog files are provided in the directory `gates`.
