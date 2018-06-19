@@ -17,12 +17,13 @@ import math
 usage = """generator.py
 
 Usage:
-  generator.py [options] <circuit.v> <gendir>
+  generator.py [options] <circuit.v>
 
 Options:
-  -s --spec=<spec.sg>       Generate spec model.
+  -o --output=<dir>         Write output files to directory.
+  -s --spec=<spec.sg>       Generate spec model for verification.
   -t --template=<template>  Specify template [default: standard].
-  -l --lib=<file>           Load library file(s).
+  -l --lib=<file>           Load additional library file(s).
 
 """
 
@@ -185,8 +186,6 @@ def main():
 
     args = docopt(usage, version="generator.py v0.1")
 
-    output_dir = args["<gendir>"]
-
     built_in_libs = os.path.join(get_tool_path(), 'libraries', '*')
 
     templates_dir = os.path.join(get_tool_path(), 'templates',
@@ -203,11 +202,6 @@ def main():
 
     circuit = load_verilog(args["<circuit.v>"])
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    circuit_file, spec_file = 'circuit.v', 'spec.v'
-
     def gen_circ(template_file):
         return generate_circuit(circuit, lib, template_file)
 
@@ -220,11 +214,24 @@ def main():
         template_files = [("circuit.v", gen_circ)]
 
     for file, generate in template_files:
-        print "Generating %s ...." % file
+
         template_file = os.path.join(templates_dir, file)
-        output_file = os.path.join(output_dir, file)
         content = generate(template_file)
-        write_file(content, output_file)
+
+        if args['--output']:
+
+            output_file = os.path.join(args['--output'], file)
+
+            print "Generating %s ...." % file
+
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            write_file(content, output_file)
+
+        else:
+
+            print content
 
 
 if __name__ == '__main__':
