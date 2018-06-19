@@ -25,6 +25,7 @@ slides](https://tuura.github.io/sync-models-paper/slides/)
 
 ### Documentation
 
+- [Installation](./doc/install.md)
 - [User Manual](./doc/manual.md)
 - [Tutorial](./doc/tutorial.md)
 - [Support Tools](./doc/support-tools.md)
