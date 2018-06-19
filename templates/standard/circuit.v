@@ -6,110 +6,143 @@ module circuit (
         {{- "det," if dbits -}}
 
         {%- for input in inputs %}
-        input {{ input }}_precap, // input
+        input {{ input }},
         {%- endfor %}
 
-        {%- for input in outputs %}
-        output {{ input }} {{- "," if not loop.last }} // output
+        {%- for output in outputs %}
+        output {{ output }} {{- "," if not loop.last }}
         {%- endfor %}
     );
 
-	reg [{{firebits-1}}:0] fire; // unbound register
+    // This is a thin wrapper to provide the same interface as the original
+    // circuit.
 
-	{%- for input in inputs %}
+    circuit_inner circuit1 (
+        .reset(reset),
+        .clk(clk),
+        {{- ".det(det)," if dbits -}}
 
-	{% set initial_value = initial_circuit[input] -%}
+        {%- for input in inputs %}
+        .{{input}}_precap({{ input }}),
+        {%- endfor %}
 
-	// input signal '{{input}}' (initial value = {{initial_value}})
+        {%- for output in outputs %}
+        .{{output}}({{ output }}){{- "," if not loop.last }}
+        {%- endfor %}
+    );
 
-	DFF {{input}}_ff (
-		.CK(clk),
-		.ST({{ "reset" if     initial_value else "1'b0" }}),
-		.RS({{ "reset" if not initial_value else "1'b0" }}),
-		.D({{input}}_precap),
-		.Q({{input}}),
-		.ENA(fire == {{loop.index0}})
-	);
+endmodule
 
-	{%- endfor -%}
+module circuit_inner (
+        input reset,
+        input clk,
+        {{- "det," if dbits -}}
 
-	{#-------- Stateful Modules --------#}
+        {%- for input in inputs %}
+        input {{ input }}_precap,
+        {%- endfor %}
 
-	{% for instance, mod in stateful.iteritems() %}
+        {%- for input in outputs %}
+        output {{ input }} {{- "," if not loop.last }}
+        {%- endfor %}
+    );
 
-	{%- set output_pin = get_output_pin(mod) -%}
-	{%- set output_net = get_output_net(mod) -%}
-	{%- set output_pre = output_net + "_precap" %}
-	{%- set category = "output" if output_net in outputs else "internal" -%}
-	{% set initial_value = initial_circuit[output_net] -%}
-	{% set fire_ind = firing_indices[output_net] %}
+    reg [{{firebits-1}}:0] fire; // unbound register
 
-	// {{category}} signal '{{output_net}}' (initial value = {{initial_value}})
+    {%- for input in inputs %}
 
-	{%- if lib[mod["type"]]["type"] == "GATE" %}
+    {% set initial_value = initial_circuit[input] -%}
 
-	{#-------- Gate -------- #}
+    // input signal '{{input}}' (initial value = {{initial_value}})
 
-	{{mod["type"]}} {{instance}} (
+    DFF {{input}}_ff (
+        .CK(clk),
+        .ST({{ "reset" if     initial_value else "1'b0" }}),
+        .RS({{ "reset" if not initial_value else "1'b0" }}),
+        .D({{input}}_precap),
+        .Q({{input}}),
+        .ENA(fire == {{loop.index0}})
+    );
 
-		{%- for pin, net in mod["connections"].iteritems() %}
-		{%- set pin_net = output_pre if pin==output_pin else net -%}
-		.{{pin}}({{pin_net}}){{ ", " if not loop.last }}
-		{%- endfor -%}
-	); {{"// virtual module" if mod.get("virtual")}}
+    {%- endfor -%}
 
-	DFF {{instance}}_ff (
-		.CK(clk),
-		.ST({{ "reset" if     initial_value else "1'b0" }}),
-		.RS({{ "reset" if not initial_value else "1'b0" }}),
-		.D({{output_pre}}),
-		.Q({{output_net}}),
-		.ENA(fire == {{fire_ind}})
-	);
+    {#-------- Stateful Modules --------#}
 
-	{#-------- End of Gate --------#}
+    {% for instance, mod in stateful.iteritems() %}
 
-	{%- else %}
+    {%- set output_pin = get_output_pin(mod) -%}
+    {%- set output_net = get_output_net(mod) -%}
+    {%- set output_pre = output_net + "_precap" %}
+    {%- set category = "output" if output_net in outputs else "internal" -%}
+    {% set initial_value = initial_circuit[output_net] -%}
+    {% set fire_ind = firing_indices[output_net] %}
 
-	{#-------- Latch -------- #}
+    // {{category}} signal '{{output_net}}' (initial value = {{initial_value}})
 
-	{{mod["type"]}} {{instance}} (
-		.CK(clk),
-		.RS({{ "reset" if not initial_value else "1'b0" }}),
-		.ST({{ "reset" if     initial_value else "1'b0" }}),
-		.PRECAP({{output_pre}}),
+    {%- if lib[mod["type"]]["type"] == "GATE" %}
 
-		{%- for pin, net in mod["connections"].iteritems() %}
-		.{{pin}}({{net}}),
-		{%- endfor %}
-		.ENA(fire == {{fire_ind}})
-	);
+    {#-------- Gate -------- #}
 
-	{#-------- End of Latch --------#}
+    {{mod["type"]}} {{instance}} (
 
-	{%- endif %}
+        {%- for pin, net in mod["connections"].iteritems() %}
+        {%- set pin_net = output_pre if pin==output_pin else net -%}
+        .{{pin}}({{pin_net}}){{ ", " if not loop.last }}
+        {%- endfor -%}
+    ); {{"// virtual module" if mod.get("virtual")}}
 
-	{%- endfor %}
+    DFF {{instance}}_ff (
+        .CK(clk),
+        .ST({{ "reset" if     initial_value else "1'b0" }}),
+        .RS({{ "reset" if not initial_value else "1'b0" }}),
+        .D({{output_pre}}),
+        .Q({{output_net}}),
+        .ENA(fire == {{fire_ind}})
+    );
 
-	{#-------- End of Stateful Modules -------- #}
+    {#-------- End of Gate --------#}
 
-	// Stateless modules
+    {%- else %}
 
-	{#-------- Non-stateful Modules --------#}
+    {#-------- Latch -------- #}
 
-	{% for instance, mod in stateless.iteritems() %}
+    {{mod["type"]}} {{instance}} (
+        .CK(clk),
+        .RS({{ "reset" if not initial_value else "1'b0" }}),
+        .ST({{ "reset" if     initial_value else "1'b0" }}),
+        .PRECAP({{output_pre}}),
 
-	{%- set output_net = get_output_net(mod) -%}
+        {%- for pin, net in mod["connections"].iteritems() %}
+        .{{pin}}({{net}}),
+        {%- endfor %}
+        .ENA(fire == {{fire_ind}})
+    );
 
-	{{mod["type"]}} {{instance}} (
+    {#-------- End of Latch --------#}
 
-		{%- for pin, net in mod["connections"].iteritems() -%}
-		.{{pin}}({{net}}){{ ", " if not loop.last }}
-		{%- endfor -%}
-	);
+    {%- endif %}
 
-	{%- endfor -%}
+    {%- endfor %}
 
-	{#-------- End of non-stateful Modules -------- #}
+    {#-------- End of Stateful Modules -------- #}
+
+    // Stateless modules
+
+    {#-------- Non-stateful Modules --------#}
+
+    {% for instance, mod in stateless.iteritems() %}
+
+    {%- set output_net = get_output_net(mod) -%}
+
+    {{mod["type"]}} {{instance}} (
+
+        {%- for pin, net in mod["connections"].iteritems() -%}
+        .{{pin}}({{net}}){{ ", " if not loop.last }}
+        {%- endfor -%}
+    );
+
+    {%- endfor -%}
+
+    {#-------- End of non-stateful Modules -------- #}
 
 endmodule
