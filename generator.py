@@ -13,10 +13,16 @@ import re
 import json
 import math
 
+
 usage = """generator.py
 
 Usage:
-  generator.py [--spec=<spec.sg>] <circuit.v> <templates> <gendir>
+  generator.py [options] <circuit.v> <gendir>
+
+Options:
+  -s --spec=<spec.sg>       Generate spec model.
+  -t --template=<template>  Specify template [default: standard].
+  -l --lib=<file>           Load library file(s).
 
 """
 
@@ -170,15 +176,31 @@ def generate_spec(spec, circuit, lib, template):
     return template.render(combined_context)
 
 
+def get_tool_path():
+    """Return tool root directory."""
+    return os.path.split(__file__)[0]
+
+
 def main():
 
     args = docopt(usage, version="generator.py v0.1")
 
-    templates = args["<templates>"]
     output_dir = args["<gendir>"]
 
-    lib = load_lib("libraries/*.lib")
+    built_in_libs = os.path.join(get_tool_path(), 'libraries', '*')
+
+    templates_dir = os.path.join(get_tool_path(), 'templates',
+                                 args["--template"])
+
+    if args['--lib']:
+        lib_paths = [built_in_libs, args['--lib']]
+    else:
+        lib_paths = [built_in_libs]
+
+    lib = load_lib(*lib_paths)
+
     spec = load_sg(args["--spec"]) if args["--spec"] else None
+
     circuit = load_verilog(args["<circuit.v>"])
 
     if not os.path.exists(output_dir):
@@ -192,12 +214,14 @@ def main():
     def gen_spec(template_file):
         return generate_spec(spec, circuit, lib, template_file)
 
-    if spec: template_files = [("circuit.v", gen_circ), ("spec.v", gen_spec)]
-    else: template_files = [("circuit.v", gen_circ)]
+    if spec:
+        template_files = [("circuit.v", gen_circ), ("spec.v", gen_spec)]
+    else:
+        template_files = [("circuit.v", gen_circ)]
 
     for file, generate in template_files:
         print "Generating %s ...." % file
-        template_file = os.path.join(templates, file)
+        template_file = os.path.join(templates_dir, file)
         output_file = os.path.join(output_dir, file)
         content = generate(template_file)
         write_file(content, output_file)
