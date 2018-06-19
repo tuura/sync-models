@@ -161,7 +161,7 @@ endmodule
 
 module bind_info();
 
-    bind circuit spec u1 (
+    bind circuit_inner spec u1 (
         .reset(reset),
         .clk(clk),
         .fire(fire),
