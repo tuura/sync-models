@@ -192,3 +192,28 @@ verification properties).
 Both files can now be passed to a sync formal verification tool to verify spec
 compliance. If the verification tool does not support loading `.lib` files,
 corresponding Verilog files are provided in the directory `gates`.
+
+As an example, we provide the output log produced by a commercial verification
+tool running on `circuit.v` and `spec.v`:
+
+```
+Verification mode:
+  circuit1.u1.persistency_ro : Pass - Trigger: Pass (6)
+  circuit1.u1.compliance_ro_rise : Pass - Trigger: Pass (6)
+  circuit1.u1.persistency_ai : Pass - Trigger: Pass (16)
+  circuit1.u1.persistency__U2_QN : Pass - Trigger: Pass (10)
+  circuit1.u1.compliance_ai_fall : Pass - Trigger: Pass (22)
+  circuit1.u1.compliance_ai_rise : Pass - Trigger: Pass (16)
+  circuit1.u1.deadlock_free : Pass
+  circuit1.u1.compliance_ro_fall : Pass - Trigger: Pass (12)
+Assertion Summary:
+  Total                  :   8
+  Pass                   :   8
+  Not_Run                :   0
+```
+
+In the above:
+
+- Internal/output signals `ro`, `ai` and `_U2_QN` passed persistency checks
+- Output signals `ro` and `ai` passed compliance checks
+- The circuit passed deadlock checks

@@ -23,7 +23,7 @@ Options:
   -o --output=<dir>         Write output files to directory.
   -s --spec=<spec.sg>       Generate spec model for verification.
   -t --template=<template>  Specify template [default: standard].
-  -l --lib=<file>           Load additional library file(s).
+  -l --lib=<dir>            Load additional library file(s).
 
 """
 
@@ -192,9 +192,11 @@ def main():
                                  args["--template"])
 
     if args['--lib']:
-        lib_paths = [built_in_libs, args['--lib']]
+        user_libs = os.path.join(args['--lib'], '*')
     else:
-        lib_paths = [built_in_libs]
+        user_libs = None
+
+    lib_paths = [built_in_libs] + ([user_libs] if user_libs else [])
 
     lib = load_lib(*lib_paths)
 

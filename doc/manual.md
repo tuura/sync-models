@@ -13,7 +13,7 @@ Options:
   -o --output=<dir>         Write output files to directory.
   -s --spec=<spec.sg>       Generate spec model for verification.
   -t --template=<template>  Specify template [default: standard].
-  -l --lib=<file>           Load additional library file(s).
+  -l --lib=<dir>            Load additional library file(s).
 ```
 
 where the input circuit `circuit.v` is a gate-level Verilog netlist.
@@ -30,12 +30,7 @@ circuits. Second, they contain definitions for cells inside the generated sync
 model (and must therefore be imported by sync simulators/verifiers that use
 the generated circuit).
 
-The tool can load additional library files using `--lib` which can either
-accept individual files or glob patterns. In the latter case, make sure you
-enclose the glob pattern in single quoates to prevent the shell from expanding
-it.
-
-For example, use `--lib 'myproject/libraries/*'` and **not** `--lib myproject/libraries/*`
+The tool can load additional (user) library files using `--lib`.
 
 #### Templates
 
@@ -53,5 +48,9 @@ specification.
 To generate a specification model, run the tool as follows:
 
 ```
-./generator.py --spec myspec.sg circuit.v
+./generator.py --spec myspec.sg --output generated circuit.v
 ```
+
+The tool generates both circuit and spec models when `--spec` is used. It is
+therefore best to accompany this with `--output` to write generated files to a
+given directory instead of printing them to the terminal.
