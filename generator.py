@@ -224,8 +224,8 @@ def main():
 
             print "Generating %s ...." % file
 
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+            if not os.path.exists(args['--output']):
+                os.makedirs(args['--output'])
 
             write_file(content, output_file)
 
